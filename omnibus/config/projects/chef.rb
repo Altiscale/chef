@@ -65,6 +65,10 @@ dependency "chef"
 dependency "shebang-cleanup"
 dependency "version-manifest"
 dependency "openssl-customization"
+dependency "verticloudkeydb"
+dependency "alti_kerbutils"
+dependency "mysql_client"
+dependency "mysql_gem"
 
 if windows?
   dependency "ruby-windows-devkit"
