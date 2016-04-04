@@ -46,6 +46,17 @@ instance_eval(IO.read(overrides_path), overrides_path)
 override :"ruby-windows-devkit", version: "4.5.2-20111229-1559" if windows? && windows_arch_i386?
 
 dependency "preparation"
+dependency "rb-readline" if windows?
+dependency "nokogiri"
+dependency "pry"
+dependency "chef"
+dependency "shebang-cleanup"
+dependency "version-manifest"
+dependency "openssl-customization"
+dependency "verticloudkeydb"
+dependency "alti_kerbutils"
+dependency "mysql_client"
+dependency "mysql_gem"
 
 # All actual dependencies are in chef-complete, so that the addition
 # or removal of a dependency doesn't dirty the entire project file
