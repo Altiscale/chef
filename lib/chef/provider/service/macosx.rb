@@ -181,7 +181,7 @@ class Chef
         end
 
         def set_service_status
-          return if @plist == nil or @service_label.to_s.empty?
+          return if @plist == nil || @service_label.to_s.empty?
 
           cmd = "launchctl list #{@service_label}"
           res = shell_out_as_user(cmd)
@@ -236,7 +236,7 @@ class Chef
           plists = PLIST_DIRS.inject([]) do |results, dir|
             edir = ::File.expand_path(dir)
             entries = Dir.glob(
-              "#{edir}/*#{Chef::Util::PathHelper.escape_glob(@current_resource.service_name)}*.plist"
+              "#{edir}/*#{Chef::Util::PathHelper.escape_glob_dir(@current_resource.service_name)}*.plist"
             )
             entries.any? ? results << entries : results
           end

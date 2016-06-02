@@ -44,6 +44,19 @@ To mention the team, use @chef/client-core
 * [Ranjib Dey](https://github.com/ranjib)
 * [Matt Wrock](https://github.com/mwrock)
 
+## Ohai
+
+To mention the team, use @chef/ohai
+
+### Lieutenant
+
+* [Claire McQuin](https://github.com/mcquin)
+
+### Maintainers
+
+* [Bryan McLellan](https://github.com/btm)
+* [Tim Smith](https://github.com/tas50)
+
 ## Dev Tools
 
 ChefDK, Chef Zero, Knife, Chef Apply and Chef Shell.
@@ -70,6 +83,23 @@ To mention the team, use @chef/client-test-tools
 * [Joshua Timberman](https://github.com/jtimberman)
 * [Lamont Granquist](https://github.com/lamont-granquist)
 * [Ranjib Dey](https://github.com/ranjib)
+
+## Chef Provisioning
+
+Chef Provisioning and Drivers.  Supported Drivers are listed in the [README](https://github.com/chef/chef-provisioning/blob/master/README.md#chef-provisioning).
+
+To mention the team, use @chef/provisioning
+
+### Lieutenant
+
+* [Tyler Ball](https://github.com/tyler-ball)
+
+### Maintainers
+
+* [John Keiser](https://github.com/jkeiser)
+* [Stuart Preston](https://github.com/stuartpreston)
+* [JJ Asghar](https://github.com/jjasghar)
+* [João Cravo](https://github.com/joaogbcravo)
 
 ## Platform Specific Components
 
@@ -160,6 +190,30 @@ To mention the team, use @chef/client-debian
 ### Maintainers
 
 * [Lamont Granquist](https://github.com/lamont-granquist)
+
+## Cisco NX-OS
+
+To mention the team, use @chef/client-nxos
+
+### Lieutenant
+
+* [Carl Perry](https://github.com/edolnx)
+
+### Maintainers
+
+* [Carl Perry](https://github.com/edolnx)
+
+## Cisco IOS XR
+
+To mention the team, use @chef/client-iosxr
+
+### Lieutenant
+
+* [Carl Perry](https://github.com/edolnx)
+
+### Maintainers
+
+* [Carl Perry](https://github.com/edolnx)
 
 ## Fedora
 

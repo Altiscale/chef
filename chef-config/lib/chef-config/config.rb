@@ -25,6 +25,8 @@ require "pathname"
 require "chef-config/logger"
 require "chef-config/windows"
 require "chef-config/path_helper"
+require "chef-config/mixin/fuzzy_hostname_matcher"
+
 require "mixlib/shellout"
 require "uri"
 require "openssl"
@@ -34,6 +36,7 @@ module ChefConfig
   class Config
 
     extend Mixlib::Config
+    extend ChefConfig::Mixin::FuzzyHostnameMatcher
 
     # Evaluates the given string as config.
     #
@@ -299,6 +302,12 @@ module ChefConfig
     # Using 'stream_execute_output' will have Chef always stream the execute output
     default :stream_execute_output, false
 
+    # Using `show_download_progress` will display the overall progress
+    # of a remote file download
+    default :show_download_progress, false
+    # How often to update the progress meter, in percent
+    default :download_progress_interval, 10
+
     default :http_retry_count, 5
     default :http_retry_delay, 5
     default :interval, nil
@@ -476,8 +485,8 @@ module ChefConfig
     # Path to the default CA bundle files.
     default :ssl_ca_path, nil
     default(:ssl_ca_file) do
-      if ChefConfig.windows? and embedded_path = embedded_dir
-        cacert_path = File.join(embedded_path, "ssl/certs/cacert.pem")
+      if ChefConfig.windows? && embedded_dir
+        cacert_path = File.join(embedded_dir, "ssl/certs/cacert.pem")
         cacert_path if File.exist?(cacert_path)
       else
         nil
@@ -703,6 +712,9 @@ module ChefConfig
     # Use atomic updates (i.e. move operation) while updating contents
     # of the files resources. When set to false copy operation is
     # used to update files.
+    #
+    # NOTE: CHANGING THIS SETTING MAY CAUSE CORRUPTION, DATA LOSS AND
+    # INSTABILITY.
     default :file_atomic_update, true
 
     # There are 3 possible values for this configuration setting.
@@ -837,6 +849,26 @@ module ChefConfig
       ENV["NO_PROXY"] = value unless ENV["NO_PROXY"]
     end
 
+    # Given a scheme, host, and port, return the correct proxy URI based on the
+    # set environment variables, unless exluded by no_proxy, in which case nil
+    # is returned
+    def self.proxy_uri(scheme, host, port)
+      proxy_env_var = ENV["#{scheme}_proxy"].to_s.strip
+
+      # Check if the proxy string contains a scheme. If not, add the url's scheme to the
+      # proxy before parsing. The regex /^.*:\/\// matches, for example, http://. Reusing proxy
+      # here since we are really just trying to get the string built correctly.
+      proxy = if !proxy_env_var.empty?
+                if proxy_env_var =~ /^.*:\/\//
+                  URI.parse(proxy_env_var)
+                else
+                  URI.parse("#{scheme}://#{proxy_env_var}")
+                end
+              end
+
+      return proxy unless fuzzy_hostname_match_any?(host, ENV["no_proxy"])
+    end
+
     # Chef requires an English-language UTF-8 locale to function properly.  We attempt
     # to use the 'locale -a' command and search through a list of preferences until we
     # find one that we can use.  On Ubuntu systems we should find 'C.UTF-8' and be
@@ -928,7 +960,11 @@ module ChefConfig
       require "digest"
       require "digest/sha1"
       require "digest/md5"
+      # Remove pre-existing constants if they do exist to reduce the
+      # amount of log spam and warnings.
+      Digest.send(:remove_const, "SHA1") if Digest.const_defined?("SHA1")
       Digest.const_set("SHA1", OpenSSL::Digest::SHA1)
+      OpenSSL::Digest.send(:remove_const, "MD5") if OpenSSL::Digest.const_defined?("MD5")
       OpenSSL::Digest.const_set("MD5", Digest::MD5)
     end
   end

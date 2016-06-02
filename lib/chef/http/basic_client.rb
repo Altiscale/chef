@@ -95,30 +95,18 @@ class Chef
         raise
       end
 
-      #adapted from buildr/lib/buildr/core/transports.rb
       def proxy_uri
-        proxy = Chef::Config["#{url.scheme}_proxy"] ||
-          env["#{url.scheme.upcase}_PROXY"] || env["#{url.scheme}_proxy"]
-
-        # Check if the proxy string contains a scheme. If not, add the url's scheme to the
-        # proxy before parsing. The regex /^.*:\/\// matches, for example, http://. Reusing proxy
-        # here since we are really just trying to get the string built correctly.
-        if String === proxy && !proxy.strip.empty?
-          if proxy =~ /^.*:\/\//
-            proxy = URI.parse(proxy.strip)
-          else
-            proxy = URI.parse("#{url.scheme}://#{proxy.strip}")
-          end
-        end
-
-        no_proxy = Chef::Config[:no_proxy] || env["NO_PROXY"] || env["no_proxy"]
-        excludes = no_proxy.to_s.split(/\s*,\s*/).compact
-        excludes = excludes.map { |exclude| exclude =~ /:\d+$/ ? exclude : "#{exclude}:*" }
-        return proxy unless excludes.any? { |exclude| File.fnmatch(exclude, "#{host}:#{port}") }
+        @proxy_uri ||= Chef::Config.proxy_uri(url.scheme, host, port)
       end
 
       def build_http_client
-        http_client = http_client_builder.new(host, port)
+        # Note: the last nil in the new below forces Net::HTTP to ignore the
+        # no_proxy environment variable. This is a workaround for limitations
+        # in Net::HTTP use of the no_proxy environment variable. We internally
+        # match no_proxy with a fuzzy matcher, rather than letting Net::HTTP
+        # do it.
+        http_client = http_client_builder.new(host, port, nil)
+        http_client.proxy_port = nil if http_client.proxy_address == nil
 
         if url.scheme == HTTPS
           configure_ssl(http_client)
@@ -133,30 +121,22 @@ class Chef
         Chef::Config
       end
 
-      def env
-        ENV
-      end
-
       def http_client_builder
-        http_proxy = proxy_uri
-        if http_proxy.nil?
+        if proxy_uri.nil?
           Net::HTTP
         else
-          Chef::Log.debug("Using #{http_proxy.host}:#{http_proxy.port} for proxy")
-          user = http_proxy_user(http_proxy)
-          pass = http_proxy_pass(http_proxy)
-          Net::HTTP.Proxy(http_proxy.host, http_proxy.port, user, pass)
+          Chef::Log.debug("Using #{proxy_uri.host}:#{proxy_uri.port} for proxy")
+          Net::HTTP.Proxy(proxy_uri.host, proxy_uri.port, http_proxy_user(proxy_uri),
+                          http_proxy_pass(proxy_uri))
         end
       end
 
-      def http_proxy_user(http_proxy)
-        http_proxy.user || Chef::Config["#{url.scheme}_proxy_user"] ||
-          env["#{url.scheme.upcase}_PROXY_USER"] || env["#{url.scheme}_proxy_user"]
+      def http_proxy_user(proxy_uri)
+        proxy_uri.user || Chef::Config["#{proxy_uri.scheme}_proxy_user"]
       end
 
-      def http_proxy_pass(http_proxy)
-        http_proxy.password || Chef::Config["#{url.scheme}_proxy_pass"] ||
-          env["#{url.scheme.upcase}_PROXY_PASS"] || env["#{url.scheme}_proxy_pass"]
+      def http_proxy_pass(proxy_uri)
+        proxy_uri.password || Chef::Config["#{proxy_uri.scheme}_proxy_pass"]
       end
 
       def configure_ssl(http_client)

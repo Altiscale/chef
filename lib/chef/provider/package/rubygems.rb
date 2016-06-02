@@ -115,7 +115,7 @@ class Chef
           # Compatibility note: Rubygems 1.x uses Gem::Format, 2.0 moved this
           # code into Gem::Package.
           def spec_from_file(file)
-            if defined?(Gem::Format) and Gem::Package.respond_to?(:open)
+            if defined?(Gem::Format) && Gem::Package.respond_to?(:open)
               Gem::Format.from_file_by_path(file).spec
             else
               Gem::Package.new(file).spec
@@ -517,7 +517,9 @@ class Chef
               install_via_gem_command(name, version)
             end
           elsif @new_resource.gem_binary.nil?
-            @gem_env.install(@new_resource.source)
+            # domain is used by Gem::DependencyInstaller rather than by Chef code
+            # domain can be :local, :remote or :both
+            @gem_env.install(@new_resource.source, domain: :local)
           else
             install_via_gem_command(name, version)
           end
@@ -531,6 +533,7 @@ class Chef
         def install_via_gem_command(name, version)
           if @new_resource.source =~ /\.gem$/i
             name = @new_resource.source
+            src = " --local" unless source_is_remote?
           elsif @new_resource.clear_sources
             src = " --clear-sources"
             src << (@new_resource.source && " --source=#{@new_resource.source}" || "")

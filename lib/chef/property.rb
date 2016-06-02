@@ -72,6 +72,9 @@ class Chef
     #     property defaults to the same value as `name`. Equivalent to
     #     `default: lazy { name }`, except that #property_is_set? will
     #     return `true` if the property is set *or* if `name` is set.
+    #   @option options [Boolean] :nillable `true` opt-in to Chef-13 style behavior where
+    #     attempting to set a nil value will really set a nil value instead of issuing
+    #     a warning and operating like a getter
     #   @option options [Object] :default The value this property
     #     will return if the user does not set one. If this is `lazy`, it will
     #     be run in the context of the instance (and able to access other
@@ -87,7 +90,7 @@ class Chef
     #     is fully initialized.
     #
     def initialize(**options)
-      options.each { |k, v| options[k.to_sym] = v; options.delete(k) if k.is_a?(String) }
+      options = options.inject({}) { |memo, (key, value)| memo[key.to_sym] = value; memo }
       @options = options
       options[:name] = options[:name].to_sym if options[:name]
       options[:instance_variable_name] = options[:instance_variable_name].to_sym if options[:instance_variable_name]
@@ -233,7 +236,7 @@ class Chef
     #
     def validation_options
       @validation_options ||= options.reject { |k, v|
-        [:declared_in, :name, :instance_variable_name, :desired_state, :identity, :default, :name_property, :coerce, :required].include?(k)
+        [:declared_in, :name, :instance_variable_name, :desired_state, :identity, :default, :name_property, :coerce, :required, :nillable].include?(k)
       }
     end
 
@@ -262,11 +265,11 @@ class Chef
         return get(resource)
       end
 
-      if value.nil?
+      if value.nil? && !nillable?
         # In Chef 12, value(nil) does a *get* instead of a set, so we
         # warn if the value would have been changed. In Chef 13, it will be
         # equivalent to value = nil.
-        result = get(resource)
+        result = get(resource, nil_set: true)
 
         # Warn about this becoming a set in Chef 13.
         begin
@@ -311,7 +314,7 @@ class Chef
     # @raise Chef::Exceptions::ValidationFailed If the value is invalid for
     #   this property, or if the value is required and not set.
     #
-    def get(resource)
+    def get(resource, nil_set: false)
       # If it's set, return it (and evaluate any lazy values)
       if is_set?(resource)
         value = get_value(resource)
@@ -335,7 +338,8 @@ class Chef
         #
         # It won't do what they expect. This checks whether you try to *read*
         # `content` while we are compiling the resource.
-        if resource.respond_to?(:resource_initializing) &&
+        if !nil_set &&
+            resource.respond_to?(:resource_initializing) &&
             resource.resource_initializing &&
             resource.respond_to?(:enclosing_provider) &&
             resource.enclosing_provider &&
@@ -668,6 +672,10 @@ class Chef
       end
 
       result
+    end
+
+    def nillable?
+      !!options[:nillable]
     end
   end
 end

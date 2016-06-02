@@ -66,7 +66,7 @@ module ChefConfig
       args.flatten.inject() do |joined_path, component|
         joined_path = joined_path.sub(trailing_slashes, "")
         component = component.sub(leading_slashes, "")
-        joined_path += "#{path_separator}#{component}"
+        joined_path + "#{path_separator}#{component}"
       end
     end
 
@@ -128,6 +128,17 @@ module ChefConfig
       abs_path
     end
 
+    # This is the INVERSE of Pathname#cleanpath, it converts forward
+    # slashes to backwhacks for Windows.  Since the Ruby API and the
+    # Windows APIs all consume forward slashes, this helper function
+    # should only be used for *DISPLAY* logic to send strings back
+    # to the user with backwhacks.  Internally, filename paths should
+    # generally be stored with forward slashes for consistency.  It is
+    # not necessary or desired to blindly convert pathnames to have
+    # backwhacks on Windows.
+    #
+    # Generally, if the user isn't going to be seeing it, you should be
+    # using Pathname#cleanpath intead of this function.
     def self.cleanpath(path)
       path = Pathname.new(path).cleanpath.to_s
       # ensure all forward slashes are backslashes
@@ -239,7 +250,7 @@ module ChefConfig
 
     # Determine if the given path is protected by OS X System Integrity Protection.
     def self.is_sip_path?(path, node)
-      if node["platform"] == "mac_os_x" and Gem::Version.new(node["platform_version"]) >= Gem::Version.new("10.11")
+      if node["platform"] == "mac_os_x" && Gem::Version.new(node["platform_version"]) >= Gem::Version.new("10.11")
           # todo: parse rootless.conf for this?
         sip_paths = [
           "/System", "/bin", "/sbin", "/usr"

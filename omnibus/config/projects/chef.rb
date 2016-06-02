@@ -18,8 +18,13 @@ name "chef"
 friendly_name "Chef Client"
 maintainer "Chef Software, Inc. <maintainers@chef.io>"
 homepage "https://www.chef.io"
+license "Apache-2.0"
+license_file "../LICENSE"
 
 build_iteration 1
+# Do not use __FILE__ after this point, use current_file. If you use __FILE__
+# after this point, any dependent defs (ex: angrychef) that use instance_eval
+# will fail to work correctly.
 current_file ||= __FILE__
 version_file = File.expand_path("../../../../VERSION", current_file)
 build_version IO.read(version_file).strip
@@ -33,24 +38,6 @@ if windows?
 else
   install_dir "#{default_root}/#{name}"
 end
-
-if windows?
-  override :ruby, version: "2.0.0-p645"
-  # Leave dev-kit pinned to 4.5 because 4.7 is 20MB larger and we don't want
-  # to unnecessarily make the client any fatter.
-  if windows_arch_i386?
-    override :'ruby-windows-devkit', version: "4.5.2-20111229-1559"
-  end
-else
-  override :ruby, version: "2.1.6"
-end
-
-override :bundler,      version: "1.11.2"
-override :rubygems,     version: "2.5.2"
-
-# Chef Release version pinning
-override :chef, version: "local_source"
-override :ohai, version: "master"
 
 # Global FIPS override flag.
 if windows? || rhel?
@@ -70,12 +57,17 @@ dependency "alti_kerbutils"
 dependency "mysql_client"
 dependency "mysql_gem"
 
-if windows?
-  dependency "ruby-windows-devkit"
-  dependency "ruby-windows-devkit-bash"
-end
+# Load dynamically updated overrides
+overrides_path = File.expand_path("../../../../omnibus_overrides.rb", current_file)
+instance_eval(IO.read(overrides_path), overrides_path)
 
-dependency "clean-static-libs"
+override :"ruby-windows-devkit", version: "4.5.2-20111229-1559" if windows? && windows_arch_i386?
+
+dependency "preparation"
+
+# All actual dependencies are in chef-complete, so that the addition
+# or removal of a dependency doesn't dirty the entire project file
+dependency "chef-complete"
 
 package :rpm do
   signing_passphrase ENV["OMNIBUS_RPM_SIGNING_PASSPHRASE"]

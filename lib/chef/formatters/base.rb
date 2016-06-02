@@ -19,7 +19,7 @@
 
 require "chef/event_dispatch/base"
 require "chef/formatters/error_inspectors"
-require "chef/formatters/error_descriptor"
+require "chef/formatters/error_description"
 require "chef/formatters/error_mapper"
 require "chef/formatters/indentable_output_stream"
 
@@ -51,8 +51,8 @@ class Chef
     #--
     # TODO: is it too clever to be defining new() on a module like this?
     def self.new(name, out, err)
-      formatter_class = by_name(name.to_s) or
-        raise UnknownFormatter, "No output formatter found for #{name} (available: #{available_formatters.join(', ')})"
+      formatter_class = by_name(name.to_s)
+      raise UnknownFormatter, "No output formatter found for #{name} (available: #{available_formatters.join(', ')})" unless formatter_class
 
       formatter_class.new(out, err)
     end
