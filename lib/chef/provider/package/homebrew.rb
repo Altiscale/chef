@@ -53,7 +53,7 @@ class Chef
         def upgrade_package(name, version)
           current_version = current_resource.version
 
-          if current_version.nil? or current_version.empty?
+          if current_version.nil? || current_version.empty?
             install_package(name, version)
           elsif current_version != version
             brew("upgrade", new_resource.options, name)
@@ -127,7 +127,7 @@ class Chef
 
           Chef::Log.debug "Executing '#{command}' as user '#{homebrew_user.name}'"
           # FIXME: this 1800 second default timeout should be deprecated
-          output = shell_out_with_timeout!(command, :timeout => 1800, :user => homebrew_uid, :environment => { "HOME" => homebrew_user.dir, "RUBYOPT" => nil })
+          output = shell_out_with_timeout!(command, :timeout => 1800, :user => homebrew_uid, :environment => { "HOME" => homebrew_user.dir, "RUBYOPT" => nil, "TMPDIR" => nil })
           output.stdout.chomp
         end
 

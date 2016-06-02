@@ -22,8 +22,8 @@ require "chef/mixin/convert_to_class_name"
 require "chef/mixin/enforce_ownership_and_permissions"
 require "chef/mixin/why_run"
 require "chef/mixin/shell_out"
-require "chef/mixin/powershell_out"
 require "chef/mixin/provides"
+require "chef/dsl/core"
 require "chef/platform/service_helpers"
 require "chef/node_map"
 require "forwardable"
@@ -31,17 +31,7 @@ require "forwardable"
 class Chef
   class Provider
     require "chef/mixin/why_run"
-    require "chef/mixin/shell_out"
     require "chef/mixin/provides"
-    include Chef::Mixin::WhyRun
-    include Chef::Mixin::ShellOut
-    include Chef::Mixin::PowershellOut
-    extend Chef::Mixin::Provides
-
-    # supports the given resource and action (late binding)
-    def self.supports?(resource, action)
-      true
-    end
 
     attr_accessor :new_resource
     attr_accessor :current_resource
@@ -49,6 +39,17 @@ class Chef
 
     attr_reader :recipe_name
     attr_reader :cookbook_name
+
+    include Chef::Mixin::WhyRun
+    extend Chef::Mixin::Provides
+
+    # includes the "core" DSL and not the "recipe" DSL by design
+    include Chef::DSL::Core
+
+    # supports the given resource and action (late binding)
+    def self.supports?(resource, action)
+      true
+    end
 
     #--
     # TODO: this should be a reader, and the action should be passed in the
@@ -390,9 +391,6 @@ class Chef
           end
         end
       end
-
-      require "chef/dsl/recipe"
-      include Chef::DSL::Recipe::FullDSL
     end
 
     protected

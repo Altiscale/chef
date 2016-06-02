@@ -13,7 +13,7 @@ Gem::Specification.new do |s|
   s.email = "adam@chef.io"
   s.homepage = "http://www.chef.io"
 
-  s.required_ruby_version = ">= 2.0.0"
+  s.required_ruby_version = ">= 2.1.0"
 
   s.add_dependency "chef-config", "= #{Chef::VERSION}"
 
@@ -26,13 +26,14 @@ Gem::Specification.new do |s|
   s.add_dependency "ffi-yajl", "~> 2.2"
   s.add_dependency "net-ssh", ">= 2.9", "< 4.0"
   s.add_dependency "net-ssh-multi", "~> 1.1"
+  s.add_dependency "net-sftp", "~> 2.1", ">= 2.1.2"
   s.add_dependency "highline", "~> 1.6", ">= 1.6.9"
   s.add_dependency "erubis", "~> 2.7"
   s.add_dependency "diff-lcs", "~> 1.2", ">= 1.2.4"
 
   s.add_dependency "chef-zero", "~> 4.5"
 
-  s.add_dependency "plist", "~> 3.1.0"
+  s.add_dependency "plist", "~> 3.2"
 
   # Audit mode requires these, so they are non-developmental dependencies now
   %w{rspec-core rspec-expectations rspec-mocks}.each { |gem| s.add_dependency gem, "~> 3.4" }
@@ -48,12 +49,6 @@ Gem::Specification.new do |s|
   # v1.10 is needed as a runtime dep now for 'bundler/inline'
   # very deliberately avoiding putting a ceiling on this to avoid depsolver conflicts.
   s.add_dependency "bundler", ">= 1.10"
-
-  s.add_development_dependency "rack"
-  s.add_development_dependency "cheffish", ">= 1.1", "< 3.0"
-  s.add_development_dependency "github_changelog_generator", "1.11.3"
-
-  s.add_development_dependency "rake", "~> 10.1"
 
   s.bindir       = "bin"
   s.executables  = %w{ chef-client chef-solo knife chef-shell chef-apply }

@@ -50,7 +50,7 @@ class Chef
       end
 
       def given_uri
-        (name_args[0] or Chef::Config.chef_server_url)
+        (name_args[0] || Chef::Config.chef_server_url)
       end
 
       def host
@@ -245,6 +245,7 @@ ADVICE
 
       def run
         validate_uri
+
         if verify_X509 && verify_cert && verify_cert_host
           ui.msg "Successfully verified certificates from `#{host}'"
         else

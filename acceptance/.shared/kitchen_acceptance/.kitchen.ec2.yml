@@ -10,7 +10,7 @@ end
 driver:
   name: ec2
   tags:
-    X-Project: Kitchen Tests
+    X-Project: chef-ci-acceptance
   aws_ssh_key_id: <%= ENV['AWS_SSH_KEY_ID'] || ENV['USER'] || ENV['USERNAME'] %>
   # test-specific stuff
   region: us-west-2
@@ -201,6 +201,8 @@ platforms:
   # Windows
   #
   - name: windows-2012r2
+    provisioner:
+      architecture: <%= ENV["KITCHEN_CHEF_WIN_ARCHITECTURE"] %>
     driver:
       image_search:
         name: Windows_Server-2012-R2*-English-*-Base-*

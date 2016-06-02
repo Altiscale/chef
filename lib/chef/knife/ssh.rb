@@ -80,6 +80,13 @@ class Chef
         :description => "The ssh port",
         :proc => Proc.new { |key| Chef::Config[:knife][:ssh_port] = key.strip }
 
+      option :ssh_timeout,
+        :short => "-t SECONDS",
+        :long => "--ssh-timeout SECONDS",
+        :description => "The ssh connection timeout",
+        :proc => Proc.new { |key| Chef::Config[:knife][:ssh_timeout] = key.strip.to_i },
+        :default => 120
+
       option :ssh_gateway,
         :short => "-G GATEWAY",
         :long => "--ssh-gateway GATEWAY",
@@ -162,7 +169,7 @@ class Chef
                search_nodes
         if list.length == 0
           if @action_nodes.length == 0
-            ui.fatal("No nodes returned from search!")
+            ui.fatal("No nodes returned from search")
           else
             ui.fatal("#{@action_nodes.length} #{@action_nodes.length > 1 ? "nodes" : "node"} found, " +
                      "but does not have the required attribute to establish the connection. " +
@@ -258,6 +265,9 @@ class Chef
           # Handle port overrides for the main connection.
           session_opts[:port] = Chef::Config[:knife][:ssh_port] if Chef::Config[:knife][:ssh_port]
           session_opts[:port] = config[:ssh_port] if config[:ssh_port]
+          # Handle connection timeout
+          session_opts[:timeout] = Chef::Config[:knife][:ssh_timeout] if Chef::Config[:knife][:ssh_timeout]
+          session_opts[:timeout] = config[:ssh_timeout] if config[:ssh_timeout]
           # Create the hostspec.
           hostspec = session_opts[:user] ? "#{session_opts.delete(:user)}@#{host}" : host
           # Connect a new session on the multi.

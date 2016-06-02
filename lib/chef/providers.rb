@@ -17,6 +17,7 @@
 #
 
 require "chef/provider/apt_update"
+require "chef/provider/apt_repository"
 require "chef/provider/batch"
 require "chef/provider/breakpoint"
 require "chef/provider/cookbook_file"
@@ -41,6 +42,7 @@ require "chef/provider/log"
 require "chef/provider/ohai"
 require "chef/provider/mdadm"
 require "chef/provider/mount"
+require "chef/provider/noop"
 require "chef/provider/package"
 require "chef/provider/powershell_script"
 require "chef/provider/osx_profile"
@@ -124,6 +126,7 @@ require "chef/provider/deploy/revision"
 require "chef/provider/deploy/timestamped"
 
 require "chef/provider/remote_file/ftp"
+require "chef/provider/remote_file/sftp"
 require "chef/provider/remote_file/http"
 require "chef/provider/remote_file/local_file"
 require "chef/provider/remote_file/network_file"

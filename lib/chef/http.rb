@@ -74,6 +74,7 @@ class Chef
     attr_reader :redirect_limit
 
     attr_reader :options
+
     attr_reader :middlewares
 
     # Create a HTTP client object. The supplied +url+ is used as the base for
@@ -153,6 +154,33 @@ class Chef
       raise
     end
 
+    def streaming_request_with_progress(path, headers = {}, &progress_block)
+      url = create_url(path)
+      response, rest_request, return_value = nil, nil, nil
+      tempfile = nil
+
+      method = :GET
+      method, url, headers, data = apply_request_middleware(method, url, headers, data)
+
+      response, rest_request, return_value = send_http_request(method, url, headers, data) do |http_response|
+        if http_response.kind_of?(Net::HTTPSuccess)
+          tempfile = stream_to_tempfile(url, http_response, &progress_block)
+        end
+        apply_stream_complete_middleware(http_response, rest_request, return_value)
+      end
+      return nil if response.kind_of?(Net::HTTPRedirection)
+      unless response.kind_of?(Net::HTTPSuccess)
+        response.error!
+      end
+      tempfile
+    rescue Exception => e
+      log_failed_request(response, return_value) unless response.nil?
+      if e.respond_to?(:chef_rest_request=)
+        e.chef_rest_request = rest_request
+      end
+      raise
+    end
+
     # Makes a streaming download request, streaming the response body to a
     # tempfile. If a block is given, the tempfile is passed to the block and
     # the tempfile will automatically be unlinked after the block is executed.
@@ -221,7 +249,7 @@ class Chef
       return path if path.is_a?(URI)
       if path =~ /^(http|https|chefzero):\/\//i
         URI.parse(path)
-      elsif path.nil? or path.empty?
+      elsif path.nil? || path.empty?
         URI.parse(@url)
       else
         # The regular expressions used here are to make sure '@url' does not have
@@ -392,7 +420,8 @@ class Chef
       headers
     end
 
-    def stream_to_tempfile(url, response)
+    def stream_to_tempfile(url, response, &progress_block)
+      content_length = response["Content-Length"]
       tf = Tempfile.open("chef-rest")
       if Chef::Platform.windows?
         tf.binmode # required for binary files on Windows platforms
@@ -405,6 +434,7 @@ class Chef
 
       response.read_body do |chunk|
         tf.write(stream_handler.handle_chunk(chunk))
+        yield tf.size, content_length if block_given?
       end
       tf.close
       tf

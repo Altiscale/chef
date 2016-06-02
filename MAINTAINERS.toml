@@ -51,6 +51,17 @@ another component.
         "mwrock"
       ]
 
+      [Org.Components.Ohai]
+        title = "Ohai"
+        team = "ohai"
+
+        lieutenant = "mcquin"
+
+        maintainers = [
+          "btm",
+          "tas50"
+        ]
+
     [Org.Components.DevTools]
       title = "Dev Tools"
       team = "client-dev-tools"
@@ -82,6 +93,22 @@ another component.
         "jtimberman",
         "lamont-granquist",
         "ranjib"
+      ]
+
+    [Org.Components.Provisioning]
+      title = "Chef Provisioning"
+      team = "provisioning"
+      text = """
+Chef Provisioning and Drivers.  Supported Drivers are listed in the [README](https://github.com/chef/chef-provisioning/blob/master/README.md#chef-provisioning).
+"""
+
+      lieutenant = "tyler-ball"
+
+      maintainers = [
+        "jkeiser",
+        "stuartpreston",
+        "jjasghar",
+        "joaogbcravo",
       ]
 
     [Org.Components.Subsystems]
@@ -161,6 +188,26 @@ The specific components of Chef related to a given platform - including (but not
           "lamont-granquist"
         ]
 
+      [Org.Components.Subsystems.CiscoNXOS]
+        title = "Cisco NX-OS"
+        team = "client-nxos"
+
+        lieutenant = "adamleff"
+
+        maintainers = [
+          "adamleff"
+        ]
+
+      [Org.Components.Subsystems.CiscoIOSXR]
+        title = "Cisco IOS XR"
+        team = "client-iosxr"
+
+        lieutenant = "adamleff"
+
+        maintainers = [
+          "adamleff"
+        ]
+
     [Org.Components.Subsystems.Fedora]
         title = "Fedora"
         team = "client-fedora"
@@ -232,6 +279,10 @@ The specific components of Chef related to a given platform - including (but not
   [people.adamhjk]
     Name = "Adam Jacob"
     GitHub = "adamhjk"
+
+  [people.adamleff]
+    Name = "Adam Leff"
+    GitHub = "adamleff"
 
   [people.Aevin1387]
     Name = "Cory Stephenson"
@@ -336,3 +387,26 @@ The specific components of Chef related to a given platform - including (but not
   [people.mwrock]
     Name = "Matt Wrock"
     GitHub = "mwrock"
+
+  [people.tas50]
+    Name = "Tim Smith"
+    GitHub = "tas50"
+
+  [people.jkeiser]
+    Name = "John Keiser"
+    GitHub = "jkeiser"
+
+  [people.stuartpreston]
+    Name = "Stuart Preston"
+    GitHub = "stuartpreston"
+
+  [people.jjasghar]
+    Name = "JJ Asghar"
+    GitHub = "jjasghar"
+    Twitter = "jjasghar"
+    IRC = "j^2"
+
+  [people.joaogbcravo]
+    Name = "João Cravo"
+    GitHub = "joaogbcravo"
+    Twitter = "joaogbcravo"
