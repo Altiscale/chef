@@ -10,7 +10,7 @@ dependency "chef"
 
 build do
   # This is where we get the definitions below
-  require_relative "../../files/chef-appbundle/build-chef-appbundle"
+  require File.expand_path("../../../files/chef-appbundle/build-chef-appbundle.rb", __FILE__)
   extend BuildChefAppbundle
 
   appbundle_gem "chef"
