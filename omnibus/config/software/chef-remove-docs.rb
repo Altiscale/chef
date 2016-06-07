@@ -20,7 +20,7 @@ license :project_license
 
 build do
   # This is where we get the definitions below
-  require_relative "../../files/chef/build-chef"
+  require File.expand_path("../../../files/chef/build-chef.rb", __FILE__)
   extend BuildChef
 
   delete "#{install_dir}/embedded/docs"
