@@ -413,7 +413,7 @@ DEPENDENCIES
   chef-provisioning
   chef-provisioning-aws
   chef-rewind
-  chef-sugar (~> 3.4)
+  chef-sugar
   cheffish
   chefspec
   chefstyle!
