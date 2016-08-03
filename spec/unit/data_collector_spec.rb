@@ -20,6 +20,7 @@
 
 require "spec_helper"
 require "chef/data_collector"
+require "chef/resource_builder"
 
 describe Chef::DataCollector do
   describe ".register_reporter?" do
@@ -155,6 +156,10 @@ describe Chef::DataCollector::Reporter do
   let(:reporter) { described_class.new }
   let(:run_status) { Chef::RunStatus.new(Chef::Node.new, Chef::EventDispatch::Dispatcher.new) }
 
+  before do
+    Chef::Config[:data_collector][:server_url] = "http://my-data-collector-server.mycompany.com"
+  end
+
   describe '#run_started' do
     before do
       allow(reporter).to receive(:update_run_status)
@@ -193,10 +198,32 @@ describe Chef::DataCollector::Reporter do
     end
   end
 
+  describe '#converge_start' do
+    it "stashes the run_context for later use" do
+      reporter.converge_start("test_context")
+      expect(reporter.run_context).to eq("test_context")
+    end
+  end
+
+  describe '#converge_complete' do
+    it "detects and processes any unprocessed resources" do
+      expect(reporter).to receive(:detect_unprocessed_resources)
+      reporter.converge_complete
+    end
+  end
+
+  describe '#converge_failed' do
+    it "detects and processes any unprocessed resources" do
+      expect(reporter).to receive(:detect_unprocessed_resources)
+      reporter.converge_failed("exception")
+    end
+  end
+
   describe '#resource_current_state_loaded' do
     let(:new_resource)     { double("new_resource") }
     let(:action)           { double("action") }
     let(:current_resource) { double("current_resource") }
+    let(:resource_report)  { double("resource_report") }
 
     context "when resource is a nested resource" do
       it "does not update the resource report" do
@@ -207,14 +234,12 @@ describe Chef::DataCollector::Reporter do
     end
 
     context "when resource is not a nested resource" do
-      it "updates the resource report" do
+      it "creates the resource report and stores it as the current one" do
         allow(reporter).to receive(:nested_resource?).and_return(false)
-        expect(Chef::DataCollector::ResourceReport).to receive(:new).with(
-          new_resource,
-          action,
-          current_resource)
-        .and_return("resource_report")
-        expect(reporter).to receive(:update_current_resource_report).with("resource_report")
+        expect(reporter).to receive(:create_resource_report)
+          .with(new_resource, action, current_resource)
+          .and_return(resource_report)
+        expect(reporter).to receive(:update_current_resource_report).with(resource_report)
         reporter.resource_current_state_loaded(new_resource, action, current_resource)
       end
     end
@@ -226,15 +251,9 @@ describe Chef::DataCollector::Reporter do
     let(:resource_report) { double("resource_report") }
 
     before do
-      allow(reporter).to receive(:increment_resource_count)
       allow(reporter).to receive(:nested_resource?)
       allow(reporter).to receive(:current_resource_report).and_return(resource_report)
       allow(resource_report).to receive(:up_to_date)
-    end
-
-    it "increments the resource count" do
-      expect(reporter).to receive(:increment_resource_count)
-      reporter.resource_up_to_date(new_resource, action)
     end
 
     context "when the resource is a nested resource" do
@@ -261,15 +280,9 @@ describe Chef::DataCollector::Reporter do
     let(:resource_report) { double("resource_report") }
 
     before do
-      allow(reporter).to receive(:increment_resource_count)
       allow(reporter).to receive(:nested_resource?)
-      allow(reporter).to receive(:current_resource_report).and_return(resource_report)
+      allow(reporter).to receive(:create_resource_report).and_return(resource_report)
       allow(resource_report).to receive(:skipped)
-    end
-
-    it "increments the resource count" do
-      expect(reporter).to receive(:increment_resource_count)
-      reporter.resource_skipped(new_resource, action, conditional)
     end
 
     context "when the resource is a nested resource" do
@@ -281,13 +294,12 @@ describe Chef::DataCollector::Reporter do
     end
 
     context "when the resource is not a nested resource" do
-      it "updates the resource report" do
+      it "creates the resource report and stores it as the current one" do
         allow(reporter).to receive(:nested_resource?).and_return(false)
-        expect(Chef::DataCollector::ResourceReport).to receive(:new).with(
-          new_resource,
-          action)
-        .and_return("resource_report")
-        expect(reporter).to receive(:update_current_resource_report).with("resource_report")
+        expect(reporter).to receive(:create_resource_report)
+          .with(new_resource, action)
+          .and_return(resource_report)
+        expect(reporter).to receive(:update_current_resource_report).with(resource_report)
         reporter.resource_skipped(new_resource, action, conditional)
       end
 
@@ -307,11 +319,6 @@ describe Chef::DataCollector::Reporter do
       allow(resource_report).to receive(:updated)
     end
 
-    it "increments the resource count" do
-      expect(reporter).to receive(:increment_resource_count)
-      reporter.resource_updated("new_resource", "action")
-    end
-
     it "marks the resource report as updated" do
       expect(resource_report).to receive(:updated)
       reporter.resource_updated("new_resource", "action")
@@ -326,17 +333,11 @@ describe Chef::DataCollector::Reporter do
     let(:resource_report) { double("resource_report") }
 
     before do
-      allow(reporter).to receive(:increment_resource_count)
       allow(reporter).to receive(:update_error_description)
       allow(reporter).to receive(:current_resource_report).and_return(resource_report)
       allow(resource_report).to receive(:failed)
       allow(Chef::Formatters::ErrorMapper).to receive(:resource_failed).and_return(error_mapper)
       allow(error_mapper).to receive(:for_json)
-    end
-
-    it "increments the resource count" do
-      expect(reporter).to receive(:increment_resource_count)
-      reporter.resource_failed(new_resource, action, exception)
     end
 
     it "updates the error description" do
@@ -372,15 +373,16 @@ describe Chef::DataCollector::Reporter do
     let(:resource_report) { double("resource_report") }
 
     before do
-      allow(reporter).to receive(:add_updated_resource)
       allow(reporter).to receive(:update_current_resource_report)
+      allow(reporter).to receive(:add_resource_report)
+      allow(reporter).to receive(:current_resource_report)
       allow(resource_report).to receive(:finish)
     end
 
     context "when there is no current resource report" do
-      it "does not add the updated resource" do
+      it "does not touch the current resource report" do
         allow(reporter).to receive(:current_resource_report).and_return(nil)
-        expect(reporter).not_to receive(:add_updated_resource)
+        expect(reporter).not_to receive(:update_current_resource_report)
         reporter.resource_completed(new_resource)
       end
     end
@@ -391,9 +393,9 @@ describe Chef::DataCollector::Reporter do
       end
 
       context "when the resource is a nested resource" do
-        it "does not add the updated resource" do
+        it "does not mark the resource as finished" do
           allow(reporter).to receive(:nested_resource?).with(new_resource).and_return(true)
-          expect(reporter).not_to receive(:add_updated_resource)
+          expect(resource_report).not_to receive(:finish)
           reporter.resource_completed(new_resource)
         end
       end
@@ -405,11 +407,6 @@ describe Chef::DataCollector::Reporter do
 
         it "marks the current resource report as finished" do
           expect(resource_report).to receive(:finish)
-          reporter.resource_completed(new_resource)
-        end
-
-        it "adds the resource to the updated resource list" do
-          expect(reporter).to receive(:add_updated_resource).with(resource_report)
           reporter.resource_completed(new_resource)
         end
 
@@ -497,7 +494,8 @@ describe Chef::DataCollector::Reporter do
 
     [ Timeout::Error, Errno::EINVAL, Errno::ECONNRESET,
       Errno::ECONNREFUSED, EOFError, Net::HTTPBadResponse,
-      Net::HTTPHeaderSyntaxError, Net::ProtocolError, OpenSSL::SSL::SSLError ].each do |exception_class|
+      Net::HTTPHeaderSyntaxError, Net::ProtocolError, OpenSSL::SSL::SSLError,
+      Errno::EHOSTDOWN ].each do |exception_class|
       context "when the block raises a #{exception_class} exception" do
         it "disables the reporter" do
           expect(reporter).to receive(:disable_data_collector_reporter)
@@ -517,6 +515,41 @@ describe Chef::DataCollector::Reporter do
             Chef::Config[:data_collector][:raise_on_failure] = false
             expect(Chef::Log).to receive(:warn)
             expect { reporter.send(:disable_reporter_on_error) { raise exception_class.new("bummer") } }.not_to raise_error
+          end
+        end
+      end
+    end
+  end
+
+  describe '#validate_data_collector_server_url!' do
+    context "when server_url is empty" do
+      it "raises an exception" do
+        Chef::Config[:data_collector][:server_url] = ""
+        expect { reporter.send(:validate_data_collector_server_url!) }.to raise_error(Chef::Exceptions::ConfigurationError)
+      end
+    end
+
+    context "when server_url is not empty" do
+      context "when server_url is an invalid URI" do
+        it "raises an exception" do
+          Chef::Config[:data_collector][:server_url] = "this is not a URI"
+          expect { reporter.send(:validate_data_collector_server_url!) }.to raise_error(Chef::Exceptions::ConfigurationError)
+        end
+      end
+
+      context "when server_url is a valid URI" do
+        context "when server_url is a URI with no host" do
+          it "raises an exception" do
+            Chef::Config[:data_collector][:server_url] = "/file/uri.txt"
+            expect { reporter.send(:validate_data_collector_server_url!) }.to raise_error(Chef::Exceptions::ConfigurationError)
+          end
+
+        end
+
+        context "when server_url is a URI with a valid host" do
+          it "does not an exception" do
+            Chef::Config[:data_collector][:server_url] = "http://www.google.com/data-collector"
+            expect { reporter.send(:validate_data_collector_server_url!) }.not_to raise_error
           end
         end
       end

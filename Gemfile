@@ -13,7 +13,7 @@ gem "chef", path: "."
 
 gem "chef-config", path: File.expand_path("../chef-config", __FILE__) if File.exist?(File.expand_path("../chef-config", __FILE__))
 # Ensure that we can always install rake, regardless of gem groups
-gem "rake"
+gem "rake", group: [ :default, :omnibus_package, :development ]
 gem "bundler"
 gem "cheffish"
 
@@ -22,6 +22,7 @@ group(:omnibus_package) do
   gem "rb-readline"
   gem "nokogiri"
 end
+
 group(:omnibus_package, :pry) do
   gem "pry"
   gem "pry-byebug"
@@ -65,7 +66,7 @@ end
 
 group(:development, :test) do
   gem "simplecov"
-  gem "rack"
+  gem "rack", "< 2.0" # 2.0 requires Ruby 2.2+
 
   # for testing new chefstyle rules
   # gem 'chefstyle', github: 'chef/chefstyle'
@@ -78,7 +79,7 @@ end
 
 group(:travis) do
   # See `bundler-audit` in .travis.yml
-  gem "bundler-audit", git: "https://github.com/rubysec/bundler-audit.git", ref: "4e32fca"
+  gem "bundler-audit", git: "https://github.com/rubysec/bundler-audit.git"
 end
 
 instance_eval(ENV["GEMFILE_MOD"]) if ENV["GEMFILE_MOD"]
