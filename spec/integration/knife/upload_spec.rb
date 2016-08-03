@@ -96,7 +96,7 @@ EOM
           file "data_bags/x/y.json", {}
           file "environments/_default.json", { "description" => "The default Chef environment" }
           file "environments/x.json", {}
-          file "nodes/x.json", {}
+          file "nodes/x.json", { "normal" => { "tags" => [] } }
           file "roles/x.json", {}
           file "users/admin.json", { "admin" => true, "public_key" => ChefZero::PUBLIC_KEY }
           file "users/x.json", { "public_key" => ChefZero::PUBLIC_KEY }
@@ -151,6 +151,25 @@ EOM
           it "knife upload / does not change anything" do
             knife("upload /").should_succeed ""
             knife("diff --name-status /").should_succeed ""
+          end
+        end
+
+        context "the role is in ruby" do
+          before do
+            file "roles/x.rb", <<EOM
+name "x"
+description "blargle"
+EOM
+          end
+
+          it "knife upload changes the role" do
+            knife("upload /").should_succeed "Updated /roles/x.json\n"
+            knife("diff --name-status /").should_succeed ""
+          end
+
+          it "knife upload --no-diff does not change the role" do
+            knife("upload --no-diff /").should_succeed ""
+            knife("diff --name-status /").should_succeed "M\t/roles/x.rb\n"
           end
         end
 
@@ -632,14 +651,14 @@ WARN: Parse error reading #{path_to('environments/x.json')} as JSON: parse error
 ERROR: /environments/x.json failed to write: Parse error reading JSON: parse error: premature EOF
                                        {
                      (right here) ------^
-EOH
+          EOH
 
           warn = <<-EOH
 WARN: Parse error reading #{path_to('environments/x.json')} as JSON: parse error: premature EOF
                                        {
                      (right here) ------^
 
-EOH
+          EOH
           knife("upload /environments/x.json").should_fail(error1)
           knife("diff --name-status /environments/x.json").should_succeed("M\t/environments/x.json\n", :stderr => warn)
         end
@@ -783,7 +802,7 @@ EOM
           file "data_bags/x/y.json", {}
           file "environments/_default.json", { "description" => "The default Chef environment" }
           file "environments/x.json", {}
-          file "nodes/x.json", {}
+          file "nodes/x.json", { "normal" => { "tags" => [] } }
           file "roles/x.json", {}
           file "users/admin.json", { "admin" => true, "public_key" => ChefZero::PUBLIC_KEY }
           file "users/x.json", { "public_key" => ChefZero::PUBLIC_KEY }
@@ -1294,7 +1313,7 @@ EOM
           file "invitations.json", [ "foo" ]
           file "members.json", [ "bar" ]
           file "org.json", { "full_name" => "wootles" }
-          file "nodes/x.json", {}
+          file "nodes/x.json", { "normal" => { "tags" => [] } }
           file "policies/x-1.0.0.json", {}
           file "policies/blah-1.0.0.json", {}
           file "policy_groups/x.json", { "policies" => { "x" => { "revision_id" => "1.0.0" }, "blah" => { "revision_id" => "1.0.0" } } }

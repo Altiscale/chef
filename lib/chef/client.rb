@@ -45,6 +45,7 @@ require "chef/formatters/doc"
 require "chef/formatters/minimal"
 require "chef/version"
 require "chef/resource_reporter"
+require "chef/data_collector"
 require "chef/audit/audit_reporter"
 require "chef/run_lock"
 require "chef/policy_builder"
@@ -262,7 +263,8 @@ class Chef
         enforce_path_sanity
         run_ohai
 
-        register unless Chef::Config[:solo]
+        register unless Chef::Config[:solo_legacy_mode]
+        register_data_collector_reporter
 
         load_node
 
@@ -533,7 +535,7 @@ class Chef
     # @api private
     #
     def save_updated_node
-      if Chef::Config[:solo]
+      if Chef::Config[:solo_legacy_mode]
         # nothing to do
       elsif policy_builder.temporary_policy?
         Chef::Log.warn("Skipping final node save because override_runlist was given")
@@ -936,7 +938,7 @@ class Chef
     end
 
     def assert_cookbook_path_not_empty(run_context)
-      if Chef::Config[:solo]
+      if Chef::Config[:solo_legacy_mode]
         # Check for cookbooks in the path given
         # Chef::Config[:cookbook_path] can be a string or an array
         # if it's an array, go through it and check each one, raise error at the last one if no files are found
@@ -956,6 +958,12 @@ class Chef
       require "chef/win32/security"
 
       Chef::ReservedNames::Win32::Security.has_admin_privileges?
+    end
+
+    # Register the data collector reporter to send event information to the
+    # data collector server
+    def register_data_collector_reporter
+      events.register(Chef::DataCollector::Reporter.new) if Chef::DataCollector.register_reporter?
     end
   end
 end
