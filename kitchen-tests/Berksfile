@@ -1,8 +1,5 @@
 source "https://supermarket.getchef.com"
 
-cookbook "webapp", path: "cookbooks/webapp"
-cookbook "base", path: "cookbooks/base"
+cookbook "webapp", :path => "cookbooks/webapp"
 
 cookbook "php", "~> 1.5.0"
-
-cookbook "resolver", github: "chef-cookbooks/resolver"

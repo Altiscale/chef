@@ -4,7 +4,3 @@
 # another gem's installation.
 require File.expand_path("../../../files/chef-gem/build-chef-gem/gem-install-software-def.rb", __FILE__)
 BuildChefGem::GemInstallSoftwareDef.define(self, __FILE__)
-
-license "Public-Domain"
-license_file "https://github.com/apalmblad/ruby-shadow/blob/master/LICENSE"
-license_file "http://creativecommons.org/licenses/publicdomain/"

@@ -19,7 +19,6 @@
 
 require "chef/node/immutable_collections"
 require "chef/node/attribute_collections"
-require "chef/decorator/unchain"
 require "chef/mixin/deep_merge"
 require "chef/log"
 
@@ -133,7 +132,6 @@ class Chef
        :take,
        :take_while,
        :to_a,
-       :to_h,
        :to_hash,
        :to_set,
        :value?,
@@ -189,6 +187,8 @@ class Chef
       attr_accessor :deep_merge_cache
 
       def initialize(normal, default, override, automatic)
+        @set_unless_present = false
+
         @default = VividMash.new(self, default)
         @env_default = VividMash.new(self, {})
         @role_default = VividMash.new(self, {})
@@ -214,13 +214,15 @@ class Chef
        # attribute you're interested in. For example, to debug where the value
        # of `node[:network][:default_interface]` is coming from, use:
        #   debug_value(:network, :default_interface).
-       # The return value is an Array of Arrays.  The Arrays
+       # The return value is an Array of Arrays. The first element is
+       # `["set_unless_enabled?", Boolean]`, which describes whether the
+       # attribute collection is in "set_unless" mode. The rest of the Arrays
        # are pairs of `["precedence_level", value]`, where precedence level is
        # the component, such as role default, normal, etc. and value is the
        # attribute value set at that precedence level. If there is no value at
        # that precedence level, +value+ will be the symbol +:not_present+.
       def debug_value(*args)
-        COMPONENTS.map do |component|
+        components = COMPONENTS.map do |component|
           ivar = instance_variable_get(component)
           value = args.inject(ivar) do |so_far, key|
             if so_far == :not_present
@@ -233,6 +235,12 @@ class Chef
           end
           [component.to_s.sub(/^@/, ""), value]
         end
+        [["set_unless_enabled?", @set_unless_present]] + components
+      end
+
+       # Enables or disables `||=`-like attribute setting. See, e.g., Node#set_unless
+      def set_unless_value_present=(setting)
+        @set_unless_present = setting
       end
 
        # Invalidate a key in the deep_merge_cache.  If called with nil, or no arg, this will invalidate
@@ -313,134 +321,94 @@ class Chef
 
        # clears attributes from all precedence levels
       def rm(*args)
-        with_deep_merged_return_value(self, *args) do
-          rm_default(*args)
-          rm_normal(*args)
-          rm_override(*args)
+        reset(args[0])
+        # just easier to compute our retval, rather than collect+merge sub-retvals
+        ret = args.inject(merged_attributes) do |attr, arg|
+          if attr.nil? || !attr.respond_to?(:[])
+            nil
+          else
+            begin
+              attr[arg]
+            rescue TypeError
+              raise TypeError, "Wrong type in index of attribute (did you use a Hash index on an Array?)"
+            end
+          end
         end
+        rm_default(*args)
+        rm_normal(*args)
+        rm_override(*args)
+        ret
       end
+
+       # does <level>['foo']['bar'].delete('baz')
+      def remove_from_precedence_level(level, *args, key)
+        multimash = level.element(*args)
+        multimash.nil? ? nil : multimash.delete(key)
+      end
+
+      private :remove_from_precedence_level
 
        # clears attributes from all default precedence levels
        #
-       # similar to: force_default!['foo']['bar'].delete('baz')
-       # - does not autovivify
-       # - does not trainwreck if interior keys do not exist
+       # equivalent to: force_default!['foo']['bar'].delete('baz')
       def rm_default(*args)
-        with_deep_merged_return_value(combined_default, *args) do
-          default.unlink(*args)
-          role_default.unlink(*args)
-          env_default.unlink(*args)
-          force_default.unlink(*args)
-        end
+        reset(args[0])
+        remove_from_precedence_level(force_default!(autovivify: false), *args)
       end
 
        # clears attributes from normal precedence
        #
        # equivalent to: normal!['foo']['bar'].delete('baz')
-       # - does not autovivify
-       # - does not trainwreck if interior keys do not exist
       def rm_normal(*args)
-        normal.unlink(*args)
+        reset(args[0])
+        remove_from_precedence_level(normal!(autovivify: false), *args)
       end
 
        # clears attributes from all override precedence levels
        #
        # equivalent to: force_override!['foo']['bar'].delete('baz')
-       # - does not autovivify
-       # - does not trainwreck if interior keys do not exist
       def rm_override(*args)
-        with_deep_merged_return_value(combined_override, *args) do
-          override.unlink(*args)
-          role_override.unlink(*args)
-          env_override.unlink(*args)
-          force_override.unlink(*args)
-        end
+        reset(args[0])
+        remove_from_precedence_level(force_override!(autovivify: false), *args)
       end
-
-      def with_deep_merged_return_value(obj, *path, last)
-        hash = obj.read(*path)
-        return nil unless hash.is_a?(Hash)
-        ret = hash[last]
-        yield
-        ret
-      end
-
-      private :with_deep_merged_return_value
 
        #
        # Replacing attributes without merging
        #
 
        # sets default attributes without merging
-       #
-       # - this API autovivifies (and cannot trainwreck)
-      def default!(*args)
-        return Decorator::Unchain.new(self, :default!) unless args.length > 0
-        write(:default, *args)
+      def default!(opts = {})
+        # FIXME: do not flush whole cache
+        reset
+        MultiMash.new(self, @default, [], opts)
       end
 
        # sets normal attributes without merging
-       #
-       # - this API autovivifies (and cannot trainwreck)
-      def normal!(*args)
-        return Decorator::Unchain.new(self, :normal!) unless args.length > 0
-        write(:normal, *args)
+      def normal!(opts = {})
+        # FIXME: do not flush whole cache
+        reset
+        MultiMash.new(self, @normal, [], opts)
       end
 
        # sets override attributes without merging
-       #
-       # - this API autovivifies (and cannot trainwreck)
-      def override!(*args)
-        return Decorator::Unchain.new(self, :override!) unless args.length > 0
-        write(:override, *args)
+      def override!(opts = {})
+        # FIXME: do not flush whole cache
+        reset
+        MultiMash.new(self, @override, [], opts)
       end
 
        # clears from all default precedence levels and then sets force_default
-       #
-       # - this API autovivifies (and cannot trainwreck)
-      def force_default!(*args)
-        return Decorator::Unchain.new(self, :force_default!) unless args.length > 0
-        value = args.pop
-        rm_default(*args)
-        write(:force_default, *args, value)
+      def force_default!(opts = {})
+        # FIXME: do not flush whole cache
+        reset
+        MultiMash.new(self, @force_default, [@default, @env_default, @role_default], opts)
       end
 
        # clears from all override precedence levels and then sets force_override
-      def force_override!(*args)
-        return Decorator::Unchain.new(self, :force_override!) unless args.length > 0
-        value = args.pop
-        rm_override(*args)
-        write(:force_override, *args, value)
-      end
-
-      # method-style access to attributes
-
-      def read(*path)
-        merged_attributes.read(*path)
-      end
-
-      def read!(*path)
-        merged_attributes.read!(*path)
-      end
-
-      def exist?(*path)
-        merged_attributes.exist?(*path)
-      end
-
-      def write(level, *args, &block)
-        self.send(level).write(*args, &block)
-      end
-
-      def write!(level, *args, &block)
-        self.send(level).write!(*args, &block)
-      end
-
-      def unlink(level, *path)
-        self.send(level).unlink(*path)
-      end
-
-      def unlink!(level, *path)
-        self.send(level).unlink!(*path)
+      def force_override!(opts = {})
+        # FIXME: do not flush whole cache
+        reset
+        MultiMash.new(self, @force_override, [@override, @env_override, @role_override], opts)
       end
 
        #
@@ -452,9 +420,9 @@ class Chef
        #
 
       def merged_attributes(*path)
-        # immutablize(
+       # immutablize(
         merge_all(path)
-        # )
+       # )
       end
 
       def combined_override(*path)
@@ -463,27 +431,6 @@ class Chef
 
       def combined_default(*path)
         immutablize(merge_defaults(path))
-      end
-
-      def normal_unless(*args)
-        return Decorator::Unchain.new(self, :normal_unless) unless args.length > 0
-        write(:normal, *args) if read(*args[0...-1]).nil?
-      end
-
-      def default_unless(*args)
-        return Decorator::Unchain.new(self, :default_unless) unless args.length > 0
-        write(:default, *args) if read(*args[0...-1]).nil?
-      end
-
-      def override_unless(*args)
-        return Decorator::Unchain.new(self, :override_unless) unless args.length > 0
-        write(:override, *args) if read(*args[0...-1]).nil?
-      end
-
-      def set_unless(*args)
-        Chef.log_deprecation("node.set_unless is deprecated and will be removed in Chef 14, please use node.default_unless/node.override_unless (or node.normal_unless if you really need persistence)")
-        return Decorator::Unchain.new(self, :default_unless) unless args.length > 0
-        write(:normal, *args) if read(*args[0...-1]).nil?
       end
 
       def [](key)
@@ -514,17 +461,13 @@ class Chef
       alias :each_attribute :each
 
       def method_missing(symbol, *args)
-        if symbol == :to_ary
-          merged_attributes.send(symbol, *args)
-        elsif args.empty?
-          Chef.log_deprecation %q{method access to node attributes (node.foo.bar) is deprecated and will be removed in Chef 13, please use bracket syntax (node["foo"]["bar"])}
+        if args.empty?
           if key?(symbol)
             self[symbol]
           else
             raise NoMethodError, "Undefined method or attribute `#{symbol}' on `node'"
           end
         elsif symbol.to_s =~ /=$/
-          Chef.log_deprecation %q{method setting of node attributes (node.foo="bar") is deprecated and will be removed in Chef 13, please use bracket syntax (node["foo"]="bar")}
           key_to_set = symbol.to_s[/^(.+)=$/, 1]
           self[key_to_set] = (args.length == 1 ? args[0] : args)
         else
@@ -540,6 +483,10 @@ class Chef
         "#<#{self.class} " << (COMPONENTS + [:@merged_attributes, :@properties]).map {|iv|
           "#{iv}=#{instance_variable_get(iv).inspect}"
         }.join(", ") << ">"
+      end
+
+      def set_unless?
+        @set_unless_present
       end
 
        private

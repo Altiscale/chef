@@ -2,7 +2,6 @@ begin
   require "github_changelog_generator/task"
 
   GitHubChangelogGenerator::RakeTask.new :changelog do |config|
-    config.issues = false
     config.future_release = Chef::VERSION
     config.enhancement_labels = "enhancement,Enhancement,New Feature,Feature".split(",")
     config.bug_labels = "bug,Bug,Improvement,Upstream Bug".split(",")

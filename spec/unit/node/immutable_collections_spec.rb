@@ -95,10 +95,6 @@ describe Chef::Node::ImmutableMash do
     :replace,
     :select!,
     :shift,
-    :write,
-    :write!,
-    :unlink,
-    :unlink!,
   ].each do |mutator|
     it "doesn't allow mutation via `#{mutator}'" do
       expect { @immutable_mash.send(mutator) }.to raise_error(Chef::Exceptions::ImmutableAttributeModification)

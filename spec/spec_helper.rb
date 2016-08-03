@@ -66,8 +66,6 @@ require "chef/util/file_edit"
 
 require "chef/config"
 
-require "chef/chef_fs/file_system_cache"
-
 if ENV["CHEF_FIPS"] == "1"
   Chef::Config.init_openssl
 end
@@ -154,8 +152,6 @@ RSpec.configure do |config|
   config.filter_run_excluding :unix_only => true unless unix?
   config.filter_run_excluding :aix_only => true unless aix?
   config.filter_run_excluding :debian_family_only => true unless debian_family?
-  config.filter_run_excluding :linux_only => true unless linux?
-  config.filter_run_excluding :non_linux_only => true if linux?
   config.filter_run_excluding :supports_cloexec => true unless supports_cloexec?
   config.filter_run_excluding :selinux_only => true unless selinux_enabled?
   config.filter_run_excluding :requires_root => true unless root?
@@ -203,8 +199,6 @@ RSpec.configure do |config|
 
   config.before(:each) do
     Chef.reset!
-
-    Chef::ChefFS::FileSystemCache.instance.reset!
 
     Chef::Config.reset
 

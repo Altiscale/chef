@@ -257,8 +257,7 @@ ADVICE
 
       def trusted_certificates
         if configuration.trusted_certs_dir && Dir.exist?(configuration.trusted_certs_dir)
-          glob_dir = ChefConfig::PathHelper.escape_glob_dir(configuration.trusted_certs_dir)
-          Dir.glob(File.join(glob_dir, "*.{crt,pem}"))
+          Dir.glob(File.join(configuration.trusted_certs_dir, "*.{crt,pem}"))
         else
           []
         end

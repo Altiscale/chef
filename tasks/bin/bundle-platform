@@ -1,13 +1,9 @@
 #!/usr/bin/env ruby
 
 platforms = ARGV.shift
-platforms = platforms.split(" ").map { |p| Gem::Platform.new(p) }
-Gem::Platform.instance_eval { @local = platforms.last }
 old_platforms = Gem.platforms
-Gem.platforms = platforms
+Gem.platforms = platforms.split(" ").map { |p| Gem::Platform.new(p) }
 puts "bundle-platform set Gem.platforms to #{Gem.platforms.map { |p| p.to_s }} (was #{old_platforms.map { |p| p.to_s } })"
-
-desired_version = ARGV.shift.delete("_")
 
 # The rest of this is a normal bundler binstub
 require "pathname"
@@ -16,4 +12,4 @@ ENV["BUNDLE_GEMFILE"] ||= File.expand_path("../../../Gemfile",
 
 require "rubygems"
 
-load Gem.bin_path("bundler", "bundle", desired_version)
+load Gem.bin_path("bundler", "bundle")

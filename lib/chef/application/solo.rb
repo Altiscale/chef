@@ -18,7 +18,6 @@
 
 require "chef"
 require "chef/application"
-require "chef/application/client"
 require "chef/client"
 require "chef/config"
 require "chef/daemon"
@@ -29,7 +28,6 @@ require "fileutils"
 require "chef/mixin/shell_out"
 require "pathname"
 require "chef-config/mixin/dot_d"
-require "mixlib/archive"
 
 class Chef::Application::Solo < Chef::Application
   include Chef::Mixin::ShellOut
@@ -202,24 +200,10 @@ class Chef::Application::Solo < Chef::Application
     :description    => "DANGEROUS: does what it says, only useful with --recipe-url",
     :boolean        => true
 
-  option :solo_legacy_mode,
-    :long           => "--legacy-mode",
-    :description    => "Run chef-solo in legacy mode",
-    :boolean        => true
-
   attr_reader :chef_client_json
 
-  # Get this party started
-  def run
-    setup_signal_handlers
-    reconfigure
-    for_ezra if Chef::Config[:ez]
-    if !Chef::Config[:solo_legacy_mode]
-      Chef::Application::Client.new.run
-    else
-      setup_application
-      run_application
-    end
+  def initialize
+    super
   end
 
   def reconfigure
@@ -231,36 +215,13 @@ class Chef::Application::Solo < Chef::Application
 
     Chef::Config[:solo] = true
 
-    Chef::Log.deprecation("-r MUST be changed to --recipe-url, the -r option will be changed in Chef 13.0") if ARGV.include?("-r")
-
-    if !Chef::Config[:solo_legacy_mode]
-      # Because we re-parse ARGV when we move to chef-client, we need to tidy up some options first.
-      ARGV.delete("--ez")
-
-      # -r means something entirely different in chef-client land, so let's replace it with a "safe" value
-      if dash_r = ARGV.index("-r")
-        ARGV[dash_r] = "--recipe-url"
-      end
-
-      # For back compat reasons, we need to ensure that we try and use the cache_path as a repo first
-      Chef::Log.debug "Current chef_repo_path is #{Chef::Config.chef_repo_path}"
-
-      if !Chef::Config.has_key?(:cookbook_path) && !Chef::Config.has_key?(:chef_repo_path)
-        Chef::Config.chef_repo_path = Chef::Config.find_chef_repo_path(Chef::Config[:cache_path])
-      end
-
-      Chef::Config[:local_mode] = true
-    else
-      configure_legacy_mode!
-    end
-  end
-
-  def configure_legacy_mode!
     if Chef::Config[:daemonize]
       Chef::Config[:interval] ||= 1800
     end
 
     Chef::Application.fatal!(unforked_interval_error_message) if !Chef::Config[:client_fork] && Chef::Config[:interval]
+
+    Chef::Log.deprecation("-r MUST be changed to --recipe-url, the -r option will be changed in Chef 13.0") if ARGV.include?("-r")
 
     if Chef::Config[:recipe_url]
       cookbooks_path = Array(Chef::Config[:cookbook_path]).detect { |e| Pathname.new(e).cleanpath.to_s =~ /\/cookbooks\/*$/ }
@@ -274,7 +235,8 @@ class Chef::Application::Solo < Chef::Application
       FileUtils.mkdir_p(recipes_path)
       tarball_path = File.join(recipes_path, "recipes.tgz")
       fetch_recipe_tarball(Chef::Config[:recipe_url], tarball_path)
-      Mixlib::Archive.new(tarball_path).extract(Chef::Config.chef_repo_path, perms: false, ignore: /^\.$/)
+      result = shell_out!("tar zxvf #{tarball_path} -C #{recipes_path}")
+      Chef::Log.debug "#{result.stdout}"
     end
 
     # json_attribs shuld be fetched after recipe_url tarball is unpacked.
@@ -293,6 +255,7 @@ class Chef::Application::Solo < Chef::Application
   end
 
   def run_application
+    for_ezra if Chef::Config[:ez]
     if !Chef::Config[:client_fork] || Chef::Config[:once]
       # Run immediately without interval sleep or splay
       begin
@@ -300,7 +263,7 @@ class Chef::Application::Solo < Chef::Application
       rescue SystemExit
         raise
       rescue Exception => e
-        Chef::Application.fatal!("#{e.class}: #{e.message}", e)
+        Chef::Application.fatal!("#{e.class}: #{e.message}", 1)
       end
     else
       interval_run_chef_client
@@ -347,7 +310,7 @@ EOH
           Chef::Log.debug("#{e.class}: #{e}\n#{e.backtrace.join("\n")}")
           retry
         else
-          Chef::Application.fatal!("#{e.class}: #{e.message}", e)
+          Chef::Application.fatal!("#{e.class}: #{e.message}", 1)
         end
       end
     end

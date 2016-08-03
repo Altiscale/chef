@@ -145,9 +145,7 @@ class Chef
         if ::File.exists?(@new_resource.path)
           converge_by("delete existing directory #{@new_resource.path}") do
             if @new_resource.recursive == true
-              # we don't use rm_rf here because it masks all errors, including
-              # IO errors or permission errors that would prvent the deletion
-              FileUtils.rm_r(@new_resource.path)
+              FileUtils.rm_rf(@new_resource.path)
               Chef::Log.info("#{@new_resource} deleted #{@new_resource.path} recursively")
             else
               ::Dir.delete(@new_resource.path)

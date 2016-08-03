@@ -431,23 +431,17 @@ class Chef
         end
 
         def current_version
-          # rubygems 2.6.3 ensures that gem lists are sorted newest first
-          pos = if Gem::Version.new(Gem::VERSION) >= Gem::Version.new("2.6.3")
-                  :first
-                else
-                  :last
-                end
-
+          #raise 'todo'
           # If one or more matching versions are installed, the newest of them
           # is the current version
           if !matching_installed_versions.empty?
-            gemspec = matching_installed_versions.send(pos)
+            gemspec = matching_installed_versions.last
             logger.debug { "#{@new_resource} found installed gem #{gemspec.name} version #{gemspec.version} matching #{gem_dependency}" }
             gemspec
             # If no version matching the requirements exists, the latest installed
             # version is the current version.
           elsif !all_installed_versions.empty?
-            gemspec = all_installed_versions.send(pos)
+            gemspec = all_installed_versions.last
             logger.debug { "#{@new_resource} newest installed version of gem #{gemspec.name} is #{gemspec.version}" }
             gemspec
           else
@@ -488,16 +482,20 @@ class Chef
 
         def candidate_version
           @candidate_version ||= begin
-                                  if source_is_remote?
-                                    @gem_env.candidate_version_from_remote(gem_dependency, *gem_sources).to_s
-                                  else
-                                    @gem_env.candidate_version_from_file(gem_dependency, @new_resource.source).to_s
-                                  end
-                                end
+                                   if target_version_already_installed?(@current_resource.version, @new_resource.version)
+                                     nil
+                                   elsif source_is_remote?
+                                     @gem_env.candidate_version_from_remote(gem_dependency, *gem_sources).to_s
+                                   else
+                                     @gem_env.candidate_version_from_file(gem_dependency, @new_resource.source).to_s
+                                   end
+                                 end
         end
 
-        def version_requirement_satisfied?(current_version, new_version)
-          return false unless current_version && new_version
+        def target_version_already_installed?(current_version, new_version)
+          return false unless current_version
+          return false if new_version.nil?
+
           Gem::Requirement.new(new_version).satisfied_by?(Gem::Version.new(current_version))
         end
 

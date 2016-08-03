@@ -1,8 +1,5 @@
 name "chef-appbundle"
 default_version "local_source"
-
-license :project_license
-
 source path: project.files_path
 
 dependency "chef"

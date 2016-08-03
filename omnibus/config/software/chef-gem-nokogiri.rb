@@ -5,8 +5,4 @@
 require File.expand_path("../../../files/chef-gem/build-chef-gem/gem-install-software-def.rb", __FILE__)
 BuildChefGem::GemInstallSoftwareDef.define(self, __FILE__)
 
-license "MIT"
-license_file "https://github.com/ruby-prof/ruby-prof/blob/master/LICENSE"
-
-dependency "chef-gem-pkg-config"
 dependency "chef-gem-mini_portile2"

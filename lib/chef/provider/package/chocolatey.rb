@@ -229,11 +229,13 @@ EOS
         def available_packages
           @available_packages ||=
             begin
-              cmd = [ "list -r #{package_name_array.join ' '}" ]
+              cmd = [ "list -ar #{package_name_array.join ' '}" ]
               cmd.push( "-source #{new_resource.source}" ) if new_resource.source
-              raw = parse_list_output(*cmd)
-              raw.keys.each_with_object({}) do |name, available|
-                available[name] = desired_name_versions[name] || raw[name]
+              parse_list_output(*cmd).each_with_object({}) do |name_version, available|
+                name, version = name_version
+                if desired_name_versions[name].nil? || desired_name_versions[name] == version
+                  available[name] = version
+                end
               end
             end
         end
@@ -250,15 +252,14 @@ EOS
         # (names are downcased for case-insenstive matching)
         #
         # @param cmd [String] command to run
-        # @return [Hash] list output converted to ruby Hash
+        # @return [Array] list output converted to ruby Hash
         def parse_list_output(*args)
-          hash = {}
+          list = []
           choco_command(*args).stdout.each_line do |line|
-            next if line.start_with?("Chocolatey v")
             name, version = line.split("|")
-            hash[name.downcase] = version.chomp
+            list << [ name.downcase, version.chomp ]
           end
-          hash
+          list
         end
 
         # Helper to downcase all names in an array

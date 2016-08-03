@@ -20,11 +20,10 @@ require "chef/knife"
 require "chef/application/knife"
 require "logger"
 require "chef/log"
-require "chef/chef_fs/file_system_cache"
 
 module KnifeSupport
   DEBUG = ENV["DEBUG"]
-  def knife(*args, input: nil)
+  def knife(*args)
     # Allow knife('role from file roles/blah.json') rather than requiring the
     # arguments to be split like knife('role', 'from', 'file', 'roles/blah.json')
     # If any argument will have actual spaces in it, the long form is required.
@@ -38,7 +37,7 @@ module KnifeSupport
     Chef::Config[:concurrency] = 1
 
     # Work on machines where we can't access /var
-    Dir.mktmpdir("checksums") do |checksums_cache_dir|
+    checksums_cache_dir = Dir.mktmpdir("checksums") do |checksums_cache_dir|
       Chef::Config[:cache_options] = {
         :path => checksums_cache_dir,
         :skip_expires => true,
@@ -48,13 +47,6 @@ module KnifeSupport
       # ourselves, thank you very much
       stdout = StringIO.new
       stderr = StringIO.new
-
-      stdin = if input
-                StringIO.new(input)
-              else
-                STDIN
-              end
-
       old_loggers = Chef::Log.loggers
       old_log_level = Chef::Log.level
       begin
@@ -65,14 +57,11 @@ module KnifeSupport
         instance = subcommand_class.new(args)
 
         # Capture stdout/stderr
-        instance.ui = Chef::Knife::UI.new(stdout, stderr, stdin, disable_editing: true)
+        instance.ui = Chef::Knife::UI.new(stdout, stderr, STDIN, {})
 
         # Don't print stuff
         Chef::Config[:verbosity] = ( DEBUG ? 2 : 0 )
         instance.config[:config_file] = File.join(CHEF_SPEC_DATA, "null_config.rb")
-
-        # Ensure the ChefFS cache is empty
-        Chef::ChefFS::FileSystemCache.instance.reset!
 
         # Configure chef with a (mostly) blank knife.rb
         # We set a global and then mutate it in our stub knife.rb so we can be

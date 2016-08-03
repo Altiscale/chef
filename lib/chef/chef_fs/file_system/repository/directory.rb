@@ -16,8 +16,6 @@
 # limitations under the License.
 #
 
-require "chef/chef_fs/file_system_cache"
-
 class Chef
   module ChefFS
     module FileSystem
@@ -29,10 +27,6 @@ class Chef
           attr_reader :parent
           attr_reader :path
           attr_reader :file_path
-
-          alias_method :display_path, :path
-          alias_method :display_name, :name
-          alias_method :bare_name, :name
 
           def initialize(name, parent, file_path = nil)
             @parent = parent
@@ -70,11 +64,9 @@ class Chef
           end
 
           def children
-            return FileSystemCache.instance.children(file_path) if FileSystemCache.instance.exist?(file_path)
-            children = dir_ls.sort.
+            dir_ls.sort.
               map { |child_name| make_child_entry(child_name) }.
               select { |new_child| new_child.fs_entry_valid? && can_have_child?(new_child.name, new_child.dir?) }
-            FileSystemCache.instance.set_children(file_path, children)
           rescue Errno::ENOENT => e
             raise Chef::ChefFS::FileSystem::NotFoundError.new(self, e)
           end
@@ -84,7 +76,6 @@ class Chef
             if child.exists?
               raise Chef::ChefFS::FileSystem::AlreadyExistsError.new(:create_child, child)
             end
-            FileSystemCache.instance.delete!(child.file_path)
             if file_contents
               child.write(file_contents)
             else
@@ -123,7 +114,6 @@ class Chef
               raise Chef::ChefFS::FileSystem::AlreadyExistsError.new(:create_child, self)
             end
             begin
-              FileSystemCache.instance.delete!(file_path)
               Dir.mkdir(file_path)
             rescue Errno::EEXIST
               raise Chef::ChefFS::FileSystem::AlreadyExistsError.new(:create_child, self)
@@ -140,7 +130,6 @@ class Chef
                 raise MustDeleteRecursivelyError.new(self, $!)
               end
               FileUtils.rm_r(file_path)
-              FileSystemCache.instance.delete!(file_path)
             else
               raise Chef::ChefFS::FileSystem::NotFoundError.new(self, $!)
             end
@@ -151,10 +140,6 @@ class Chef
           end
 
           protected
-
-          def write(data)
-            raise FileSystemError.new(self, nil, "attempted to write to a directory entry")
-          end
 
           def make_child_entry(child_name)
             raise "Not Implemented"

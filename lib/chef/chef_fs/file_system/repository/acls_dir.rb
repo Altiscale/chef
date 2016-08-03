@@ -28,16 +28,14 @@ class Chef
       module Repository
         class AclsDir < Repository::Directory
 
-          BARE_FILES = %w{ organization.json root }
-
           def can_have_child?(name, is_dir)
-            is_dir ? Chef::ChefFS::FileSystem::ChefServer::AclsDir::ENTITY_TYPES.include?(name) : BARE_FILES.include?(name)
+            is_dir ? Chef::ChefFS::FileSystem::ChefServer::AclsDir::ENTITY_TYPES.include?(name) : name == "organization.json"
           end
 
           protected
 
           def make_child_entry(child_name)
-            if BARE_FILES.include? child_name
+            if child_name == "organization.json"
               Acl.new(child_name, self)
             else
               AclsSubDir.new(child_name, self)

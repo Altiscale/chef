@@ -42,8 +42,6 @@ class Chef
     end
 
     class Application < RuntimeError; end
-    class SigInt < RuntimeError; end
-    class SigTerm < RuntimeError; end
     class Cron < RuntimeError; end
     class Env < RuntimeError; end
     class Exec < RuntimeError; end
@@ -58,14 +56,6 @@ class Chef
     class UnsupportedAction < RuntimeError; end
     class MissingLibrary < RuntimeError; end
 
-    class DeprecatedExitCode < RuntimeError
-      def initalize
-        super "Exiting with a non RFC 062 Exit Code."
-        require "chef/application/exit_code"
-        Chef::Application::ExitCode.notify_deprecated_exit_code
-      end
-    end
-
     class CannotDetermineNodeName < RuntimeError
       def initialize
         super "Unable to determine node name: configure node_name or configure the system's hostname and fqdn"
@@ -76,9 +66,6 @@ class Chef
     class Group < RuntimeError; end
     class Link < RuntimeError; end
     class Mount < RuntimeError; end
-    class Reboot < Exception; end
-    class RebootPending < Exception; end
-    class RebootFailed < Mixlib::ShellOut::ShellCommandFailed; end
     class PrivateKeyMissing < RuntimeError; end
     class CannotWritePrivateKey < RuntimeError; end
     class RoleNotFound < RuntimeError; end
@@ -106,12 +93,7 @@ class Chef
     # for back compat, need to raise an error that inherits from ArgumentError
     class CookbookNotFoundInRepo < ArgumentError; end
     class RecipeNotFound < ArgumentError; end
-    # AttributeNotFound really means the attribute file could not be found
     class AttributeNotFound < RuntimeError; end
-    # NoSuchAttribute is raised on access by node.read!("foo", "bar") when node["foo"]["bar"] does not exist.
-    class NoSuchAttribute < RuntimeError; end
-    # AttributeTypeMismatch is raised by node.write!("foo", "bar", "baz") when e.g. node["foo"] = "bar" (overwriting String with Hash)
-    class AttributeTypeMismatch < RuntimeError; end
     class MissingCookbookDependency < StandardError; end # CHEF-5120
     class InvalidCommandOption < RuntimeError; end
     class CommandTimeout < RuntimeError; end
@@ -444,20 +426,18 @@ This error is most often caused by network issues (proxies, etc) outside of chef
       end
     end
 
-    class AuditError < RuntimeError; end
-
-    class AuditControlGroupDuplicate < AuditError
+    class AuditControlGroupDuplicate < RuntimeError
       def initialize(name)
         super "Control group with name '#{name}' has already been defined"
       end
     end
-    class AuditNameMissing < AuditError; end
-    class NoAuditsProvided < AuditError
+    class AuditNameMissing < RuntimeError; end
+    class NoAuditsProvided < RuntimeError
       def initialize
         super "You must provide a block with controls"
       end
     end
-    class AuditsFailed < AuditError
+    class AuditsFailed < RuntimeError
       def initialize(num_failed, num_total)
         super "Audit phase found failures - #{num_failed}/#{num_total} controls failed"
       end

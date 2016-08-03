@@ -42,7 +42,6 @@ another component.
         "fujin",
         "jaymzh",
         "jaym",
-        "jkeiser",
         "jonlives",
         "lamont-granquist",
         "mcquin",
@@ -78,7 +77,6 @@ another component.
 
       maintainers = [
         "danielsdeleo",
-        "jkeiser",
         "jtimberman",
         "lamont-granquist",
         "stevendanna"
@@ -111,7 +109,6 @@ Chef Provisioning and Drivers.  Supported Drivers are listed in the [README](htt
         "stuartpreston",
         "jjasghar",
         "joaogbcravo",
-        "thehar"
       ]
 
     [Org.Components.Subsystems]
@@ -413,7 +410,3 @@ The specific components of Chef related to a given platform - including (but not
     Name = "João Cravo"
     GitHub = "joaogbcravo"
     Twitter = "joaogbcravo"
-
-  [people.thehar]
-    Name = "Harley Alaniz"
-    GitHub = "thehar"

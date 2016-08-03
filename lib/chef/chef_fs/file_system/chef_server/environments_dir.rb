@@ -26,7 +26,7 @@ class Chef
       module ChefServer
         class EnvironmentsDir < RestListDir
           def make_child_entry(name, exists = nil)
-            if File.basename(name, ".*") == "_default"
+            if name == "_default.json"
               DefaultEnvironmentEntry.new(name, self, exists)
             else
               super

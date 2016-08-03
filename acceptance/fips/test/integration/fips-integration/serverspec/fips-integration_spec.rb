@@ -46,7 +46,6 @@ describe "Chef Fips Integration Specs" do
   end
 
   it "passes the integration specs" do
-    skip
-    #run_rspec_test("spec/integration")
+    run_rspec_test("spec/integration")
   end
 end

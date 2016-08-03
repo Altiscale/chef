@@ -157,18 +157,8 @@ Additionally, periodically Chef will update the desired versions of chef compone
 Whenever a change is checked in to `master`, the patch version of `chef` is bumped. To do this, the `lita-versioner` bot listens to github for merged PRs, and when it finds one, takes these actions:
 
 1. Bumps the patch version in `lib/chef/version.rb` (e.g. 0.9.14 -> 0.9.15).
-2. Runs `rake bundle:install` to update the `Gemfile.lock` to include the new version.
+2. Runs `rake dependencies:update_conservative` to update the `Gemfile.lock` to include the new version.
 3. Pushes to `master` and submits a new build to Chef's Jenkins cluster.
-
-## Bumping the minor version of Chef
-
-After each "official" stable release we need to bump the minor version. To do this:
-
-1. Manually increment the minor version in the VERSION file that is in the root of this repo. and reset the patch version to 0. Assuming the current version is `12.10.57` you would edit `VERSION` to be `12.11.0`.
-2. Run `bundle exec rake version` which will copy the version to the respective `version.rb` files in chef and chef-config.
-3. Run `bundle exec rake bundle:install` to update the base Gemfile.lock
-
-Submit a PR with the changes made by the above.
 
 ## Component Versions
 

@@ -26,8 +26,8 @@ OMNIBUS_OVERRIDES = {
   ## according to comment in omnibus-sw, the very latest versions don't work on solaris
   # https://github.com/chef/omnibus-software/blob/aefb7e79d29ca746c3f843673ef5e317fa3cba54/config/software/libtool.rb#L23
   "libtool" => "2.4.2",
-  "libxml2" => "2.9.4",
-  "libxslt" => "1.1.29",
+  "libxml2" => "2.9.3",
+  "libxslt" => "1.1.28",
   "libyaml" => "0.1.6",
   "makedepend" => "1.0.5",
   "ncurses" => "5.9",
@@ -71,16 +71,12 @@ OMNIBUS_RUBYGEMS_AT_LATEST_VERSION = {
 # jwt - expected to update with new oauth2 release
 # mini_portile2 - should go away *entirely* with new nokogiri release (not a dep anymore)
 # slop - expected to disappear with new pry release
-# stove - halite pins to ~> 3.2 in 1.2.1
-# rubocop - chef-style pins to 0.39.0 in 0.3.1
 #
 ACCEPTABLE_OUTDATED_GEMS = %w{
   gherkin
   jwt
   mini_portile2
   slop
-  stove
-  rubocop
 }
 
 #

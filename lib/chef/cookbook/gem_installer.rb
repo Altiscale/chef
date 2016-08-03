@@ -59,7 +59,6 @@ class Chef
                 Chef::Log.info(so.stdout)
               end
             end
-            Gem.clear_paths
           rescue Exception => e
             events.cookbook_gem_failed(e)
             raise

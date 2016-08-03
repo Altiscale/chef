@@ -288,11 +288,11 @@ describe Chef::Environment do
 
     describe "in solo mode" do
       before do
-        Chef::Config[:solo_legacy_mode] = true
+        Chef::Config[:solo] = true
       end
 
       after do
-        Chef::Config[:solo_legacy_mode] = false
+        Chef::Config[:solo] = false
       end
 
       it "should raise and exception" do
@@ -392,12 +392,12 @@ describe Chef::Environment do
   describe "when loading" do
     describe "in solo mode" do
       before do
-        Chef::Config[:solo_legacy_mode] = true
+        Chef::Config[:solo] = true
         Chef::Config[:environment_path] = "/var/chef/environments"
       end
 
       after do
-        Chef::Config[:solo_legacy_mode] = false
+        Chef::Config[:solo] = false
       end
 
       it "should get the environment from the environment_path" do
