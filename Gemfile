@@ -4,29 +4,24 @@ extend GemfileUtil
 
 source "https://rubygems.org"
 
-# Pick the gemspec for our platform
-gemspec_name = "chef"
-Dir.glob("chef-*.gemspec").each do |gemspec_filename|
-  gemspec_filename =~ /^chef-(.+).gemspec/
-  gemspec_platform = $1
-  if Gem::Platform.match(Gem::Platform.new(gemspec_platform))
-    Bundler.ui.info "Using gemspec #{gemspec_filename} for current platform."
-    gemspec_name = "chef-#{gemspec_platform}"
-  end
-end
-gemspec name: gemspec_name
+# Note we do not use the gemspec DSL which restricts to the
+# gemspec for the current platform and filters out other platforms
+# during a bundle lock operation. We actually want dependencies from
+# both of our gemspecs. Also note this this mimics gemspec behavior
+# of bundler versions prior to 1.12.0 (https://github.com/bundler/bundler/commit/193a14fe5e0d56294c7b370a0e59f93b2c216eed)
+gem "chef", path: "."
 
 gem "chef-config", path: File.expand_path("../chef-config", __FILE__) if File.exist?(File.expand_path("../chef-config", __FILE__))
 # Ensure that we can always install rake, regardless of gem groups
-gem "rake"
+gem "rake", group: [ :default, :omnibus_package, :development ]
 gem "bundler"
 gem "cheffish"
 
 group(:omnibus_package) do
   gem "appbundler"
   gem "rb-readline"
-  gem "nokogiri"
 end
+
 group(:omnibus_package, :pry) do
   gem "pry"
   gem "pry-byebug"
@@ -70,7 +65,7 @@ end
 
 group(:development, :test) do
   gem "simplecov"
-  gem "rack"
+  gem "rack", "< 2.0" # 2.0 requires Ruby 2.2+
 
   # for testing new chefstyle rules
   # gem 'chefstyle', github: 'chef/chefstyle'
@@ -83,7 +78,7 @@ end
 
 group(:travis) do
   # See `bundler-audit` in .travis.yml
-  gem "bundler-audit", git: "https://github.com/rubysec/bundler-audit.git", ref: "4e32fca"
+  gem "bundler-audit", git: "https://github.com/rubysec/bundler-audit.git"
 end
 
 instance_eval(ENV["GEMFILE_MOD"]) if ENV["GEMFILE_MOD"]
