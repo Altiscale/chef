@@ -6,9 +6,8 @@ platform:
 
 environment:
   matrix:
-    # 21-x64 is failing right now
-    #- ruby_version: "21-x64"
-    - ruby_version: "21"
+    - ruby_version: "23-x64"
+    - ruby_version: "23"
 
 clone_folder: c:\projects\chef
 clone_depth: 1
@@ -31,6 +30,8 @@ install:
   - SET BUNDLE_IGNORE_CONFIG=true
   - SET BUNDLE_FROZEN=1
   - SET BUNDLE_WITHOUT=development:guard:maintenance:tools:integration:changelog:docgen:travis:style:omnibus_package:aix:bsd:linux:mac_os_x:solaris
+  - appveyor DownloadFile http://curl.haxx.se/ca/cacert.pem -FileName C:\cacert.pem
+  - set SSL_CERT_FILE=C:\cacert.pem
 
 build_script:
   - bundle install || bundle install || bundle install

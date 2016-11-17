@@ -71,7 +71,7 @@ class Chef
             uninstall_entries.select { |entry| [uninstall_version].flatten.include?(entry.display_version) }
               .map { |version| version.uninstall_string }.uniq.each do |uninstall_string|
                 Chef::Log.debug("Registry provided uninstall string for #{new_resource} is '#{uninstall_string}'")
-                shell_out!(uninstall_command(uninstall_string), { returns: new_resource.returns })
+                shell_out!(uninstall_command(uninstall_string), { :timeout => new_resource.timeout, :returns => new_resource.returns })
               end
           end
 
@@ -89,9 +89,10 @@ class Chef
           end
 
           def current_installed_version
-            @current_installed_version ||= uninstall_entries.count == 0 ? nil : begin
-              uninstall_entries.map { |entry| entry.display_version }.uniq
-            end
+            @current_installed_version ||=
+              if uninstall_entries.count != 0
+                uninstall_entries.map { |entry| entry.display_version }.uniq
+              end
           end
 
           # http://unattended.sourceforge.net/installers.php

@@ -187,8 +187,7 @@ class Chef
             end
             crontab << line
           end
-          description = cron_found ? "remove #{@new_resource.name} from crontab" :
-            "save unmodified crontab"
+          description = cron_found ? "remove #{@new_resource.name} from crontab" : "save unmodified crontab"
           converge_by(description) do
             write_crontab crontab
             Chef::Log.info("#{@new_resource} deleted crontab entry")
@@ -200,7 +199,7 @@ class Chef
 
       def set_environment_var(attr_name, attr_value)
         if %w{MAILTO PATH SHELL HOME}.include?(attr_name)
-          @current_resource.send(attr_name.downcase.to_sym, attr_value)
+          @current_resource.send(attr_name.downcase.to_sym, attr_value.gsub(/^"|"$/, ""))
         else
           @current_resource.environment(@current_resource.environment.merge(attr_name => attr_value))
         end

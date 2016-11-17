@@ -64,8 +64,11 @@ module KnifeSupport
         subcommand_class.load_deps
         instance = subcommand_class.new(args)
 
+        # Load configs
+        instance.merge_configs
+
         # Capture stdout/stderr
-        instance.ui = Chef::Knife::UI.new(stdout, stderr, stdin, disable_editing: true)
+        instance.ui = Chef::Knife::UI.new(stdout, stderr, stdin, instance.config.merge(disable_editing: true))
 
         # Don't print stuff
         Chef::Config[:verbosity] = ( DEBUG ? 2 : 0 )
@@ -110,8 +113,6 @@ module KnifeSupport
       KnifeResult.new(stdout.string, stderr.string, exit_code)
     end
   end
-
-  private
 
   class KnifeResult
 

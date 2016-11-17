@@ -7,7 +7,7 @@ file tells you who needs to review your patch - you need a simple majority of ma
 for the relevant subsystems to provide a :+1: on your pull request. Additionally, you need
 to not receive a veto from a Lieutenant or the Project Lead.
 
-Check out [How Chef is Maintained](https://github.com/opscode/chef-rfc/blob/master/rfc030-maintenance-policy.md#how-the-project-is-maintained) for details on the process, how to become
+Check out [How Chef is Maintained](https://github.com/chef/chef-rfc/blob/master/rfc030-maintenance-policy.md#how-the-project-is-maintained) for details on the process, how to become
 a maintainer, lieutenant, or the project lead.
 
 # Project Lead
@@ -41,6 +41,7 @@ To mention the team, use @chef/client-core
 * [Lamont Granquist](https://github.com/lamont-granquist)
 * [Claire McQuin](https://github.com/mcquin)
 * [Steven Murawski](https://github.com/smurawski)
+* [Tim Smith](https://github.com/tas50)
 * [Tyler Ball](https://github.com/tyler-ball)
 * [Ranjib Dey](https://github.com/ranjib)
 * [Matt Wrock](https://github.com/mwrock)
@@ -84,6 +85,7 @@ To mention the team, use @chef/client-test-tools
 
 * [Joshua Timberman](https://github.com/jtimberman)
 * [Lamont Granquist](https://github.com/lamont-granquist)
+* [Tim Smith](https://github.com/tas50)
 * [Ranjib Dey](https://github.com/ranjib)
 
 ## Chef Provisioning
@@ -132,6 +134,7 @@ To mention the team, use @chef/client-ubuntu
 ### Maintainers
 
 * [Lamont Granquist](https://github.com/lamont-granquist)
+* [Tim Smith](https://github.com/tas50)
 * [Thom May](https://github.com/thommay)
 
 ## Windows
@@ -193,6 +196,7 @@ To mention the team, use @chef/client-debian
 ### Maintainers
 
 * [Lamont Granquist](https://github.com/lamont-granquist)
+* [Tim Smith](https://github.com/tas50)
 
 ## Cisco NX-OS
 
@@ -233,6 +237,7 @@ To mention the team, use @chef/client-opensuse
 ### Maintainers
 
 * [Lamont Granquist](https://github.com/lamont-granquist)
+* [Tim Smith](https://github.com/tas50)
 
 ## SUSE Enterprise Linux Server
 

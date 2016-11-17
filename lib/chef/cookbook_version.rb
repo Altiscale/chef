@@ -54,12 +54,12 @@ class Chef
     attr_accessor :metadata_filenames
 
     def status=(new_status)
-      Chef.log_deprecation("Deprecated method `status' called. This method will be removed.")
+      Chef.deprecated(:internal_api, "Deprecated method `status' called. This method will be removed.")
       @status = new_status
     end
 
     def status
-      Chef.log_deprecation("Deprecated method `status' called. This method will be removed.")
+      Chef.deprecated(:internal_api, "Deprecated method `status' called. This method will be removed.")
       @status
     end
 
@@ -316,13 +316,13 @@ class Chef
           error_message << error_locations.join("\n")
           existing_files = segment_filenames(segment)
           # Strip the root_dir prefix off all files for readability
-          pretty_existing_files = existing_files.map { |path|
+          pretty_existing_files = existing_files.map do |path|
             if root_dir
               path[root_dir.length + 1..-1]
             else
               path
             end
-          }
+          end
           # Show the files that the cookbook does have. If the user made a typo,
           # hopefully they'll see it here.
           unless pretty_existing_files.empty?
@@ -485,7 +485,7 @@ class Chef
     end
 
     def self.json_create(o)
-      Chef.log_deprecation("Auto inflation of JSON data is deprecated. Please use Chef::CookbookVersion#from_hash")
+      Chef.deprecated(:json_auto_inflate, "Auto inflation of JSON data is deprecated. Please use Chef::CookbookVersion#from_hash")
       from_hash(o)
     end
 
@@ -496,7 +496,7 @@ class Chef
     # @deprecated This method was used by the Ruby Chef Server and is no longer
     #   needed. There is no replacement.
     def generate_manifest_with_urls
-      Chef.log_deprecation("Deprecated method #generate_manifest_with_urls.")
+      Chef.deprecated(:internal_api, "Deprecated method #generate_manifest_with_urls.")
 
       rendered_manifest = manifest.dup
       COOKBOOK_SEGMENTS.each do |segment|
@@ -599,12 +599,12 @@ class Chef
       end
     end
 
-    def <=>(o)
-      raise Chef::Exceptions::CookbookVersionNameMismatch if self.name != o.name
+    def <=>(other)
+      raise Chef::Exceptions::CookbookVersionNameMismatch if self.name != other.name
       # FIXME: can we change the interface to the Metadata class such
       # that metadata.version returns a Chef::Version instance instead
       # of a string?
-      Chef::Version.new(self.version) <=> Chef::Version.new(o.version)
+      Chef::Version.new(self.version) <=> Chef::Version.new(other.version)
     end
 
     private
@@ -623,7 +623,7 @@ class Chef
     # For each filename, produce a mapping of base filename (i.e. recipe name
     # or attribute file) to on disk location
     def filenames_by_name(filenames)
-      filenames.select { |filename| filename =~ /\.rb$/ }.inject({}) { |memo, filename| memo[File.basename(filename, ".rb")] = filename ; memo }
+      filenames.select { |filename| filename =~ /\.rb$/ }.inject({}) { |memo, filename| memo[File.basename(filename, ".rb")] = filename; memo }
     end
 
     def file_vendor

@@ -154,7 +154,6 @@ class Chef
         do_contents_changes
         do_acl_changes
         do_selinux
-        do_resolv_conf_fixup
         load_resource_attributes_from_file(@new_resource)
       end
 
@@ -345,7 +344,7 @@ class Chef
       end
 
       def do_validate_content
-        if new_resource.checksum && tempfile && ( new_resource.checksum != tempfile_checksum )
+        if new_resource.checksum && tempfile && ( new_resource.checksum.downcase != tempfile_checksum )
           raise Chef::Exceptions::ChecksumMismatch.new(short_cksum(new_resource.checksum), short_cksum(tempfile_checksum))
         end
 
@@ -446,13 +445,6 @@ class Chef
         end
       end
 
-      def do_resolv_conf_fixup
-        # reload /etc/resolv.conf after we edit it -- only on linux -- and see lib/chef/application.rb
-        if new_resource.path == "/etc/resolv.conf" && RbConfig::CONFIG["host_os"] =~ /linux/
-          Resolv::DefaultResolver.replace_resolvers [Resolv::DNS.new("/etc/resolv.conf")]
-        end
-      end
-
       def do_acl_changes
         if access_controls.requires_changes?
           converge_by(access_controls.describe_changes) do
@@ -468,11 +460,6 @@ class Chef
 
       def tempfile
         @tempfile ||= content.tempfile
-      end
-
-      def short_cksum(checksum)
-        return "none" if checksum.nil?
-        checksum.slice(0, 6)
       end
 
       def load_resource_attributes_from_file(resource)

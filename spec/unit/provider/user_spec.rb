@@ -190,7 +190,7 @@ describe Chef::Provider::User do
   end
 
   describe "compare_user" do
-    let(:mapping) {
+    let(:mapping) do
       {
         "username" => %w{adam Adam},
         "comment" => ["Adam Jacob", "adam jacob"],
@@ -200,7 +200,7 @@ describe Chef::Provider::User do
         "shell" => ["/usr/bin/zsh", "/bin/bash"],
         "password" => %w{abcd 12345},
       }
-    }
+    end
 
     %w{uid gid comment home shell password}.each do |attribute|
       it "should return true if #{attribute} doesn't match" do
@@ -219,6 +219,12 @@ describe Chef::Provider::User do
     end
 
     it "should return false if the objects are identical" do
+      expect(@provider.compare_user).to eql(false)
+    end
+
+    it "should ignore differences in trailing slash in home paths" do
+      @new_resource.home "/home/adam"
+      @current_resource.home "/home/adam/"
       expect(@provider.compare_user).to eql(false)
     end
   end

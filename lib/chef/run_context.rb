@@ -85,6 +85,17 @@ class Chef
     attr_reader :parent_run_context
 
     #
+    # The root run context.
+    #
+    # @return [Chef::RunContext] The root run context.
+    #
+    def root_run_context
+      rc = self
+      rc = rc.parent_run_context until rc.parent_run_context.nil?
+      rc
+    end
+
+    #
     # The collection of resources intended to be converged (and able to be
     # notified).
     #
@@ -570,17 +581,17 @@ ERROR_MESSAGE
       # These need to be settable so deploy can run a resource_collection
       # independent of any cookbooks via +recipe_eval+
       def audits=(value)
-        Chef.log_deprecation("Setting run_context.audits will be removed in a future Chef.  Use run_context.create_child to create a new RunContext instead.")
+        Chef.deprecated(:internal_api, "Setting run_context.audits will be removed in a future Chef.  Use run_context.create_child to create a new RunContext instead.")
         @audits = value
       end
 
       def immediate_notification_collection=(value)
-        Chef.log_deprecation("Setting run_context.immediate_notification_collection will be removed in a future Chef.  Use run_context.create_child to create a new RunContext instead.")
+        Chef.deprecated(:internal_api, "Setting run_context.immediate_notification_collection will be removed in a future Chef.  Use run_context.create_child to create a new RunContext instead.")
         @immediate_notification_collection = value
       end
 
       def delayed_notification_collection=(value)
-        Chef.log_deprecation("Setting run_context.delayed_notification_collection will be removed in a future Chef.  Use run_context.create_child to create a new RunContext instead.")
+        Chef.deprecated(:internal_api, "Setting run_context.delayed_notification_collection will be removed in a future Chef.  Use run_context.create_child to create a new RunContext instead.")
         @delayed_notification_collection = value
       end
     end
@@ -653,14 +664,17 @@ ERROR_MESSAGE
         notifies_immediately
         notifies_delayed
         parent_run_context
+        root_run_context
         resource_collection
         resource_collection=
       }.map { |x| x.to_sym }
 
       # Verify that we didn't miss any methods
-      missing_methods = superclass.instance_methods(false) - instance_methods(false) - CHILD_STATE
-      if !missing_methods.empty?
-        raise "ERROR: not all methods of RunContext accounted for in ChildRunContext! All methods must be marked as child methods with CHILD_STATE or delegated to the parent_run_context. Missing #{missing_methods.join(", ")}."
+      unless @__skip_method_checking # hook specifically for compat_resource
+        missing_methods = superclass.instance_methods(false) - instance_methods(false) - CHILD_STATE
+        if !missing_methods.empty?
+          raise "ERROR: not all methods of RunContext accounted for in ChildRunContext! All methods must be marked as child methods with CHILD_STATE or delegated to the parent_run_context. Missing #{missing_methods.join(", ")}."
+        end
       end
     end
   end

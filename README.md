@@ -2,15 +2,14 @@
 [![Code Climate](https://codeclimate.com/github/chef/chef.svg)](https://codeclimate.com/github/chef/chef)
 [![Build Status Master](https://travis-ci.org/chef/chef.svg?branch=master)](https://travis-ci.org/chef/chef)
 [![Build Status Master](https://ci.appveyor.com/api/projects/status/github/chef/chef?branch=master&svg=true&passingText=master%20-%20Ok&pendingText=master%20-%20Pending&failingText=master%20-%20Failing)](https://ci.appveyor.com/project/Chef/chef/branch/master)
+[![Gem Version](https://badge.fury.io/rb/chef.svg)](https://badge.fury.io/rb/chef)
 
 Want to try Chef? Get started with [learnchef](https://learn.chef.io)
 
-* Documentation: [http://docs.chef.io](http://docs.chef.io)
-* Source: [http://github.com/chef/chef/tree/master](http://github.com/chef/chef/tree/master)
+* Documentation: [https://docs.chef.io](https://docs.chef.io)
+* Source: [https://github.com/chef/chef/tree/master](https://github.com/chef/chef/tree/master)
 * Tickets/Issues: [https://github.com/chef/chef/issues](https://github.com/chef/chef/issues)
-* IRC: `#chef` and `#chef-hacking` on Freenode
-  - Join via browser: [#chef](https://webchat.freenode.net/?channels=chef), [#chef-hacking](https://webchat.freenode.net/?channels=chef-hacking)
-  - View logs: [#chef](https://botbot.me/freenode/chef/), [#chef-hacking](https://botbot.me/freenode/chef-hacking/)
+* Slack: [Chef Community Slack](https://community-slack.chef.io/)
 * Mailing list: [https://discourse.chef.io](https://discourse.chef.io)
 
 Chef is a configuration management tool designed to bring automation to your
@@ -20,14 +19,14 @@ This README focuses on developers who want to modify Chef source code.
 If you just want to use Chef, check out these resources:
 
 * [learnchef](https://learn.chef.io): Getting started guide
-* [docs.chef.io](http://docs.chef.io): Comprehensive User Docs
-* [Installer Downloads](https://www.chef.io/download-chef-client/): Install Chef as a complete package
+* [docs.chef.io](https://docs.chef.io): Comprehensive User Docs
+* [Installer Downloads](https://downloads.chef.io/chef-client/): Install Chef as a complete package
 
 ## Installing From Git
 
 **NOTE:** Unless you have a specific reason to install from source (to
 try a new feature, contribute a patch, or run chef on an OS for which no
-package is available), you should head to the [installer page](https://www.chef.io/download-chef-client/)
+package is available), you should head to the [downloads page](https://downloads.chef.io/chef-client/)
 to get a prebuilt package.
 
 ### Prerequisites
@@ -38,9 +37,9 @@ Install these via your platform's preferred method (`apt`, `yum`, `ports`,
 * git
 * C compiler, header files, etc. On Ubuntu/Debian, use the
   `build-essential` package.
-* ruby 2.0.0 or later
+* ruby 2.3.0 or later
 * rubygems
-* bundler
+* bundler gem
 
 ### Chef Installation
 
@@ -67,7 +66,7 @@ gem install pkg/chef-VERSION.gem
 
 Before working on the code, if you plan to contribute your changes, you need to
 read the
-[Chef Contributions document](http://docs.chef.io/community_contributions.html).
+[Chef Contributions document](https://docs.chef.io/community_contributions.html).
 
 The general development process is:
 
@@ -77,10 +76,10 @@ The general development process is:
 4. Push your feature branch to github and open a pull request against
    master.
 
-Once your repository is set up, you can start working on the code. We do use
-TDD with RSpec, so you'll need to get a development environment running.
-Follow the above procedure ("Installing from Git") to get your local
-copy of the source running.
+Once your repository is set up, you can start working on the code. We do utilize
+RSpec for test driven development, so you'll need to get a development
+environment running. Follow the above procedure ("Installing from Git") to get
+your local copy of the source running.
 
 ## Reporting Issues
 
@@ -142,12 +141,12 @@ Chef is an amalgam of many components. These components update all the time, nec
 
 ## Chef Packages
 
-Chef is distributed as packages for debian, rhel, ubuntu, windows and os/x. It includes a large number of components from various sources, and these are versioned and maintained separately from chef project, which bundles them all together conveniently for the user.
+Chef is distributed as packages for debian, rhel, ubuntu, windows, solaris, aix, and os x. It includes a large number of components from various sources, and these are versioned and maintained separately from chef project, which bundles them all together conveniently for the user.
 
 These packages go through several milestones:
 - `master`: When code is checked in to master, the patch version of chef is bumped (e.g. 0.9.10 -> 0.9.11) and a build is kicked off automatically to create and test the packages in Chef's Jenkins cluster.
 - `unstable`: When a package is built, it enters the unstable channel. When all packages for all OS's have successfully built, the test phase is kicked off in Jenkins across all supported OS's. These builds are password-protected and generally only available to the test systems.
-- `current`: If the packages pass all the tests on all supported OS's, it is promoted as a unit to `current`, and is available via Chef's artifactory by running `curl https://omnitruck.chef.io/install.sh | sudo bash -s -- -c current -P chef`
+- `current`: If the packages pass all the tests on all supported OS's, it is promoted as a unit to `current`, and is available via Chef's artifactory by running `curl https://www.chef.io/chef/install.sh | sudo bash -s -- -c current -P chef`
 - `stable`: Periodically, Chef will pick a release to "bless" for folks who would like a slower update schedule than "every time a build passes the tests." When this happens, it is manually promoted to stable and an announcement is sent to the list. It can be reached at https://downloads.chef.io or installed using the `curl` command without specifying `-c current`. Packages in `stable` are no longer available in `current`.
 
 Additionally, periodically Chef will update the desired versions of chef components and check that in to `master`, triggering a new build with the updated components in it.
@@ -158,17 +157,31 @@ Whenever a change is checked in to `master`, the patch version of `chef` is bump
 
 1. Bumps the patch version in `lib/chef/version.rb` (e.g. 0.9.14 -> 0.9.15).
 2. Runs `rake bundle:install` to update the `Gemfile.lock` to include the new version.
-3. Pushes to `master` and submits a new build to Chef's Jenkins cluster.
+3. Runs `rake changelog:update` to update the `CHANGELOG.md`.
+4. Pushes to `master` and submits a new build to Chef's Jenkins cluster.
 
 ## Bumping the minor version of Chef
 
 After each "official" stable release we need to bump the minor version. To do this:
 
-1. Manually increment the minor version in the VERSION file that is in the root of this repo. and reset the patch version to 0. Assuming the current version is `12.10.57` you would edit `VERSION` to be `12.11.0`.
-2. Run `bundle exec rake version` which will copy the version to the respective `version.rb` files in chef and chef-config.
-3. Run `bundle exec rake bundle:install` to update the base Gemfile.lock
+1. Run `bundle exec rake version:bump_minor`
 
 Submit a PR with the changes made by the above.
+
+## Addressing a Regression
+
+Sometimes, regressions split through the cracks. Since new functionality is always being added and the minor version is bumped immediately after release, we can't simply roll forward. In this scenario, we'll need to perform a special regression release process. In the example that follows, the stable release with a regression is `1.10.60` while master is currently sitting at `1.11.30`. *Note:* To perform this process, you must be a Chef employee.
+
+1. If the regression has not already been addressed, open a Pull Request against master with the fix.
+2. Wait until that Pull Request has been merged and `1.11.31` has passed all the necessary tests and is available in the current channel.
+3. Inspect the Git history and find the `SHA` associated with the Merge Commit for the Pull Request above.
+4. Apply the fix for the regression via a cherry-pick:
+  1. Check out the stable release tag: `git checkout v1.10.60`
+  2. Cherry Pick the SHA with the fix: `git cherry-pick SHA`
+  3. Address any conflicts (if necessary)
+  4. Tag the sha with the appropriate version: `git tag -a v1.10.61 -m "Release v1.10.61"`
+  5. Push the new tag to origin: `git push origin --tags`
+5. Log in to Jenkins and trigger a `chef-trigger-release` job specifying the new tag as the `GIT_REF`.
 
 ## Component Versions
 
@@ -281,6 +294,7 @@ Chef - A configuration management system
 | **Copyright:**       | Copyright 2008-2016, Chef Software, Inc.
 | **License:**         | Apache License, Version 2.0
 
+```
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
@@ -292,3 +306,4 @@ distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
+```

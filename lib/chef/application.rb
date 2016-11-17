@@ -28,10 +28,6 @@ require "mixlib/cli"
 require "tmpdir"
 require "rbconfig"
 require "chef/application/exit_code"
-require "resolv"
-# on linux, we replace the glibc resolver with the ruby resolv library, which
-# supports reloading.
-require "resolv-replace" if RbConfig::CONFIG["host_os"] =~ /linux/
 
 class Chef
   class Application
@@ -112,7 +108,15 @@ class Chef
         config_content = config_fetcher.read_config
         apply_config(config_content, config[:config_file])
       end
+      extra_config_options = config.delete(:config_option)
       Chef::Config.merge!(config)
+      apply_extra_config_options(extra_config_options)
+    end
+
+    def apply_extra_config_options(extra_config_options)
+      Chef::Config.apply_extra_config_options(extra_config_options)
+    rescue ChefConfig::UnparsableConfigOption => e
+      Chef::Application.fatal!(e.message)
     end
 
     def set_specific_recipes
@@ -329,13 +333,20 @@ class Chef
 
     def emit_warnings
       if Chef::Config[:chef_gem_compile_time]
-        Chef.log_deprecation "setting chef_gem_compile_time to true is deprecated"
+        Chef.deprecated :chef_gem_compile_time, "setting chef_gem_compile_time to true is deprecated"
       end
     end
 
     class << self
       def debug_stacktrace(e)
         message = "#{e.class}: #{e}\n#{e.backtrace.join("\n")}"
+
+        cause = e.cause if e.respond_to?(:cause)
+        while cause != nil
+          message << "\n\n>>>> Caused by #{cause.class}: #{cause}\n#{cause.backtrace.join("\n")}"
+          cause = cause.respond_to?(:cause) ? cause.cause : nil
+        end
+
         chef_stacktrace_out = "Generated at #{Time.now}\n"
         chef_stacktrace_out += message
 

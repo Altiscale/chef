@@ -31,6 +31,8 @@ class Chef
       include Chef::Mixin::ShellOut
       extend Chef::Mixin::SubclassDirective
 
+      use_inline_resources
+
       # subclasses declare this if they want all their arguments as arrays of packages and names
       subclass_directive :use_multipackage_api
       # subclasses declare this if they want sources (filenames) pulled from their package names
@@ -81,7 +83,7 @@ class Chef
         end
       end
 
-      def action_install
+      action :install do
         unless target_version_array.any?
           Chef::Log.debug("#{@new_resource} is already installed - nothing to do")
           return
@@ -116,7 +118,7 @@ class Chef
 
       private :install_description
 
-      def action_upgrade
+      action :upgrade do
         if !target_version_array.any?
           Chef::Log.debug("#{@new_resource} no versions to upgrade - nothing to do")
           return
@@ -146,7 +148,7 @@ class Chef
 
       private :upgrade_description
 
-      def action_remove
+      action :remove do
         if removing_package?
           description = @new_resource.version ? "version #{@new_resource.version} of " : ""
           converge_by("remove #{description}package #{@current_resource.package_name}") do
@@ -181,7 +183,7 @@ class Chef
         end
       end
 
-      def action_purge
+      action :purge do
         if removing_package?
           description = @new_resource.version ? "version #{@new_resource.version} of" : ""
           converge_by("purge #{description} package #{@current_resource.package_name}") do
@@ -193,13 +195,13 @@ class Chef
         end
       end
 
-      def action_reconfig
-        if @current_resource.version == nil then
+      action :reconfig do
+        if @current_resource.version == nil
           Chef::Log.debug("#{@new_resource} is NOT installed - nothing to do")
           return
         end
 
-        unless @new_resource.response_file then
+        unless @new_resource.response_file
           Chef::Log.debug("#{@new_resource} no response_file provided - nothing to do")
           return
         end
@@ -215,6 +217,34 @@ class Chef
           end
         else
           Chef::Log.debug("#{@new_resource} preseeding has not changed - nothing to do")
+        end
+      end
+
+      def action_lock
+        if package_locked(@new_resource.name, @new_resource.version) == false
+          description = @new_resource.version ? "version #{@new_resource.version} of " : ""
+          converge_by("lock #{description}package #{@current_resource.package_name}") do
+            multipackage_api_adapter(@current_resource.package_name, @new_resource.version) do |name, version|
+              lock_package(name, version)
+              Chef::Log.info("#{@new_resource} locked")
+            end
+          end
+        else
+          Chef::Log.debug("#{new_resource} is already locked")
+        end
+      end
+
+      def action_unlock
+        if package_locked(@new_resource.name, @new_resource.version) == true
+          description = @new_resource.version ? "version #{@new_resource.version} of " : ""
+          converge_by("unlock #{description}package #{@current_resource.package_name}") do
+            multipackage_api_adapter(@current_resource.package_name, @new_resource.version) do |name, version|
+              unlock_package(name, version)
+              Chef::Log.info("#{@new_resource} unlocked")
+            end
+          end
+        else
+          Chef::Log.debug("#{new_resource} is already unlocked")
         end
       end
 
@@ -250,6 +280,14 @@ class Chef
 
       def reconfig_package(name, version)
         raise( Chef::Exceptions::UnsupportedAction, "#{self} does not support :reconfig" )
+      end
+
+      def lock_package(name, version)
+        raise( Chef::Exceptions::UnsupportedAction, "#{self} does not support :lock" )
+      end
+
+      def unlock_package(name, version)
+        raise( Chef::Exceptions::UnsupportedAction, "#{self} does not support :unlock" )
       end
 
       # used by subclasses.  deprecated.  use #a_to_s instead.
@@ -587,16 +625,6 @@ class Chef
           args << { :timeout => new_resource.timeout ? new_resource.timeout : 900 }
         end
         args
-      end
-
-      # Helper for sublcasses to convert an array of string args into a string.  It
-      # will compact nil or empty strings in the array and will join the array elements
-      # with spaces, without introducing any double spaces for nil/empty elements.
-      #
-      # @param args [String] variable number of string arguments
-      # @return [String] nicely concatenated string or empty string
-      def a_to_s(*args)
-        args.flatten.reject { |i| i.nil? || i == "" }.join(" ")
       end
     end
   end

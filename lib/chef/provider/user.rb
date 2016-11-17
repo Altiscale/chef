@@ -113,15 +113,13 @@ class Chef
       # <true>:: If a change is required
       # <false>:: If the users are identical
       def compare_user
-        changed = [ :comment, :home, :shell, :password ].select do |user_attrib|
-          !@new_resource.send(user_attrib).nil? && @new_resource.send(user_attrib) != @current_resource.send(user_attrib)
+        return true if !@new_resource.home.nil? && Pathname.new(@new_resource.home).cleanpath != Pathname.new(@current_resource.home).cleanpath
+
+        [ :comment, :shell, :password, :uid, :gid ].each do |user_attrib|
+          return true if !@new_resource.send(user_attrib).nil? && @new_resource.send(user_attrib).to_s != @current_resource.send(user_attrib).to_s
         end
 
-        changed += [ :uid, :gid ].select do |user_attrib|
-          !@new_resource.send(user_attrib).nil? && @new_resource.send(user_attrib).to_s != @current_resource.send(user_attrib).to_s
-        end
-
-        changed.any?
+        false
       end
 
       def action_create
@@ -147,10 +145,6 @@ class Chef
         end
       end
 
-      def remove_user
-        raise NotImplementedError
-      end
-
       def action_manage
         if @user_exists && compare_user
           converge_by("manage user #{@new_resource.username}") do
@@ -158,10 +152,6 @@ class Chef
             Chef::Log.info("#{@new_resource} managed")
           end
         end
-      end
-
-      def manage_user
-        raise NotImplementedError
       end
 
       def action_modify
@@ -184,14 +174,6 @@ class Chef
         end
       end
 
-      def check_lock
-        raise NotImplementedError
-      end
-
-      def lock_user
-        raise NotImplementedError
-      end
-
       def action_unlock
         if check_lock() == true
           converge_by("unlock user #{@new_resource.username}") do
@@ -203,8 +185,38 @@ class Chef
         end
       end
 
+      def create_user
+        raise NotImplementedError
+      end
+
+      def remove_user
+        raise NotImplementedError
+      end
+
+      def manage_user
+        raise NotImplementedError
+      end
+
+      def lock_user
+        raise NotImplementedError
+      end
+
       def unlock_user
         raise NotImplementedError
+      end
+
+      def check_lock
+        raise NotImplementedError
+      end
+
+      def non_unique?
+        # XXX: THIS GOES AWAY IN CHEF-13 AND BECOMES JUST new_resource.non_unique
+        new_resource.non_unique || new_resource.supports[:non_unique]
+      end
+
+      def managing_home_dir?
+        # XXX: THIS GOES AWAY IN CHEF-13 AND BECOMES JUST new_resource.manage_home
+        new_resource.manage_home || new_resource.supports[:manage_home]
       end
     end
   end

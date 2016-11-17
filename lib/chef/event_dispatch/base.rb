@@ -232,11 +232,11 @@ class Chef
       end
 
       # Called after the recipe has been loaded
-      def recipe_file_loaded(path)
+      def recipe_file_loaded(path, recipe)
       end
 
       # Called after a recipe file fails to load
-      def recipe_file_load_failed(path, exception)
+      def recipe_file_load_failed(path, exception, recipe)
       end
 
       # Called when a recipe cannot be resolved
@@ -421,6 +421,9 @@ class Chef
       def msg(message)
       end
 
+      # Called when an attribute is changed by simple assignment
+      def attribute_changed(precedence, keys, value)
+      end
     end
   end
 end

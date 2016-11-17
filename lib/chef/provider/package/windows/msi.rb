@@ -50,7 +50,7 @@ class Chef
               Chef::Log.debug("#{new_resource} checking package status and version for #{product_code}")
               get_installed_version(product_code)
             else
-              uninstall_entries.count == 0 ? nil : begin
+              if uninstall_entries.count != 0
                 uninstall_entries.map { |entry| entry.display_version }.uniq
               end
             end
@@ -79,9 +79,10 @@ class Chef
               uninstall_version = new_resource.version || installed_version
               uninstall_entries.select { |entry| [uninstall_version].flatten.include?(entry.display_version) }
                 .map { |version| version.uninstall_string }.uniq.each do |uninstall_string|
-                Chef::Log.debug("#{new_resource} removing MSI package version using '#{uninstall_string}'")
+                uninstall_string = "msiexec /x #{uninstall_string.match(/{.*}/)}"
                 uninstall_string += expand_options(new_resource.options)
-                uninstall_string += " /Q" unless uninstall_string =~ / \/Q\b/
+                uninstall_string += " /q" unless uninstall_string.downcase =~ / \/q/
+                Chef::Log.debug("#{new_resource} removing MSI package version using '#{uninstall_string}'")
                 shell_out!(uninstall_string, { :timeout => new_resource.timeout, :returns => new_resource.returns })
               end
             end

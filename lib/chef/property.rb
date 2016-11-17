@@ -116,7 +116,7 @@ class Chef
           options.delete(:name_property)
           preferred_default = :default
         end
-        Chef.log_deprecation("Cannot specify both default and name_property together on property #{self}. Only one (#{preferred_default}) will be obeyed. In Chef 13, this will become an error. Please remove one or the other from the property.")
+        Chef.deprecated(:custom_resource, "Cannot specify both default and name_property together on property #{self}. Only one (#{preferred_default}) will be obeyed. In Chef 13, this will become an error. Please remove one or the other from the property.")
       end
 
       # Validate the default early, so the user gets a good error message, and
@@ -230,14 +230,25 @@ class Chef
     end
 
     #
+    # Whether this property is sensitive or not.
+    #
+    # Defaults to false.
+    #
+    # @return [Boolean]
+    #
+    def sensitive?
+      options.fetch(:sensitive, false)
+    end
+
+    #
     # Validation options.  (See Chef::Mixin::ParamsValidate#validate.)
     #
     # @return [Hash<Symbol,Object>]
     #
     def validation_options
-      @validation_options ||= options.reject { |k, v|
-        [:declared_in, :name, :instance_variable_name, :desired_state, :identity, :default, :name_property, :coerce, :required, :nillable].include?(k)
-      }
+      @validation_options ||= options.reject do |k, v|
+        [:declared_in, :name, :instance_variable_name, :desired_state, :identity, :default, :name_property, :coerce, :required, :nillable, :sensitive].include?(k)
+      end
     end
 
     #
@@ -276,13 +287,13 @@ class Chef
           input_to_stored_value(resource, value)
           # If nil is valid, and it would change the value, warn that this will change to a set.
           if !result.nil?
-            Chef.log_deprecation("An attempt was made to change #{name} from #{result.inspect} to nil by calling #{name}(nil). In Chef 12, this does a get rather than a set. In Chef 13, this will change to set the value to nil.")
+            Chef.deprecated(:custom_resource, "An attempt was made to change #{name} from #{result.inspect} to nil by calling #{name}(nil). In Chef 12, this does a get rather than a set. In Chef 13, this will change to set the value to nil.")
           end
         rescue Chef::Exceptions::DeprecatedFeatureError
           raise
         rescue
           # If nil is invalid, warn that this will become an error.
-          Chef.log_deprecation("nil is an invalid value for #{self}. In Chef 13, this warning will change to an error. Error: #{$!}")
+          Chef.deprecated(:custom_resource, "nil is an invalid value for #{self}. In Chef 13, this warning will change to an error. Error: #{$!}")
         end
 
         result
@@ -511,22 +522,22 @@ class Chef
       # stack trace if you use `define_method`.
       declared_in.class_eval <<-EOM, __FILE__, __LINE__ + 1
         def #{name}(value=NOT_PASSED)
-          raise "Property #{name} of \#{self} cannot be passed a block! If you meant to create a resource named #{name} instead, you'll need to first rename the property." if block_given?
+          raise "Property `#{name}` of `\#{self}` was incorrectly passed a block.  Possible property-resource collision.  To call a resource named `#{name}` either rename the property or else use `declare_resource(:#{name}, ...)`" if block_given?
           self.class.properties[#{name.inspect}].call(self, value)
         end
         def #{name}=(value)
-          raise "Property #{name} of \#{self} cannot be passed a block! If you meant to create a resource named #{name} instead, you'll need to first rename the property." if block_given?
+          raise "Property `#{name}` of `\#{self}` was incorrectly passed a block.  Possible property-resource collision.  To call a resource named `#{name}` either rename the property or else use `declare_resource(:#{name}, ...)`" if block_given?
           self.class.properties[#{name.inspect}].set(self, value)
         end
       EOM
     rescue SyntaxError
       # If the name is not a valid ruby name, we use define_method.
       declared_in.define_method(name) do |value = NOT_PASSED, &block|
-        raise "Property #{name} of #{self} cannot be passed a block! If you meant to create a resource named #{name} instead, you'll need to first rename the property." if block
+        raise "Property `#{name}` of `#{self}` was incorrectly passed a block!  Possible property-resource collision.  To call a resource named `#{name}` either rename the property or else use `declare_resource(:#{name}, ...)`" if block
         self.class.properties[name].call(self, value)
       end
       declared_in.define_method("#{name}=") do |value, &block|
-        raise "Property #{name} of #{self} cannot be passed a block! If you meant to create a resource named #{name} instead, you'll need to first rename the property." if block
+        raise "Property `#{name}` of `#{self}` was incorrectly passed a block!  Possible property-resource collision.  To call a resource named `#{name}` either rename the property or else use `declare_resource(:#{name}, ...)`" if block
         self.class.properties[name].set(self, value)
       end
     end
@@ -666,9 +677,9 @@ class Chef
         # warn and return the (possibly coerced) value to the user.
         if is_default
           if value.nil?
-            Chef.log_deprecation("Default value nil is invalid for property #{self}. Possible fixes: 1. Remove 'default: nil' if nil means 'undefined'. 2. Set a valid default value if there is a reasonable one. 3. Allow nil as a valid value of your property (for example, 'property #{name.inspect}, [ String, nil ], default: nil'). Error: #{$!}")
+            Chef.deprecated(:custom_resource, "Default value nil is invalid for property #{self}. Possible fixes: 1. Remove 'default: nil' if nil means 'undefined'. 2. Set a valid default value if there is a reasonable one. 3. Allow nil as a valid value of your property (for example, 'property #{name.inspect}, [ String, nil ], default: nil'). Error: #{$!}")
           else
-            Chef.log_deprecation("Default value #{value.inspect} is invalid for property #{self}. In Chef 13 this will become an error: #{$!}.")
+            Chef.deprecated(:custom_resource, "Default value #{value.inspect} is invalid for property #{self}. In Chef 13 this will become an error: #{$!}.")
           end
         else
           raise
