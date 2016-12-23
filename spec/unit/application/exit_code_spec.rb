@@ -64,6 +64,10 @@ describe Chef::Application::ExitCode do
     it "validates a REBOOT_FAILED return code of 41" do
       expect(valid_rfc_exit_codes.include?(41)).to eq(true)
     end
+
+    it "validates a CLIENT_UPGRADED return code of 213" do
+      expect(valid_rfc_exit_codes.include?(213)).to eq(true)
+    end
   end
 
   context "when Chef::Config :exit_status is not configured" do
@@ -73,11 +77,7 @@ describe Chef::Application::ExitCode do
     end
 
     it "writes a deprecation warning" do
-      warn = "Chef RFC 062 (https://github.com/chef/chef-rfc/master/rfc062-exit-status.md) defines the" \
-      " exit codes that should be used with Chef.  Chef::Application::ExitCode defines valid exit codes"  \
-      " In a future release, non-standard exit codes will be redefined as" \
-      " GENERIC_FAILURE unless `exit_status` is set to `:disabled` in your client.rb."
-      expect(Chef).to receive(:log_deprecation).with(warn)
+      expect(Chef).to receive(:deprecated).with(:exit_code, /^Chef RFC 062/)
       expect(exit_codes.normalize_exit_code(151)).to eq(151)
     end
 
@@ -114,11 +114,7 @@ describe Chef::Application::ExitCode do
     end
 
     it "does not write a deprecation warning" do
-      warn = "Chef RFC 062 (https://github.com/chef/chef-rfc/master/rfc062-exit-status.md) defines the" \
-      " exit codes that should be used with Chef.  Chef::Application::ExitCode defines valid exit codes"  \
-      " In a future release, non-standard exit codes will be redefined as" \
-      " GENERIC_FAILURE unless `exit_status` is set to `:disabled` in your client.rb."
-      expect(Chef).not_to receive(:log_deprecation).with(warn)
+      expect(Chef).not_to receive(:deprecated).with(:exit_code, /^Chef RFC 062/)
       expect(exit_codes.normalize_exit_code(151)).to eq(151)
     end
 
@@ -159,11 +155,7 @@ describe Chef::Application::ExitCode do
     end
 
     it "does write a deprecation warning" do
-      warn = "Chef RFC 062 (https://github.com/chef/chef-rfc/master/rfc062-exit-status.md) defines the" \
-      " exit codes that should be used with Chef.  Chef::Application::ExitCode defines valid exit codes"  \
-      " In a future release, non-standard exit codes will be redefined as" \
-      " GENERIC_FAILURE unless `exit_status` is set to `:disabled` in your client.rb."
-      expect(Chef).to receive(:log_deprecation).with(warn)
+      expect(Chef).to receive(:deprecated).with(:exit_code, /^Chef RFC 062/)
       expect(exit_codes.normalize_exit_code(151)).to eq(1)
     end
 
@@ -213,6 +205,12 @@ describe Chef::Application::ExitCode do
       reboot_error = Chef::Exceptions::RebootPending.new("BOOM")
       runtime_error = Chef::Exceptions::RunFailedWrappingError.new(reboot_error)
       expect(exit_codes.normalize_exit_code(runtime_error)).to eq(37)
+    end
+
+    it "returns CLIENT_UPGRADED when the client was upgraded during converge" do
+      client_upgraded_error = Chef::Exceptions::ClientUpgraded.new("BOOM")
+      runtime_error = Chef::Exceptions::RunFailedWrappingError.new(client_upgraded_error)
+      expect(exit_codes.normalize_exit_code(runtime_error)).to eq(213)
     end
 
     it "returns SIGINT_RECEIVED when a SIGINT is received." do

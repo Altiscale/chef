@@ -50,17 +50,17 @@ describe Chef::ResourceCollection do
 
   describe "#edit_resource!" do
     it "raises if nothing is found" do
-      expect {
+      expect do
         recipe.edit_resource!(:zen_master, "monkey") do
           something true
         end
-      }.to raise_error(Chef::Exceptions::ResourceNotFound)
+      end.to raise_error(Chef::Exceptions::ResourceNotFound)
     end
 
     it "raises if nothing is found and no block is given" do
-      expect {
+      expect do
         recipe.edit_resource!(:zen_master, "monkey")
-      }.to raise_error(Chef::Exceptions::ResourceNotFound)
+      end.to raise_error(Chef::Exceptions::ResourceNotFound)
     end
 
     it "edits the resource if it finds one" do
@@ -131,20 +131,20 @@ describe Chef::ResourceCollection do
 
   describe "#find_resource!" do
     it "raises if nothing is found" do
-      expect {
+      expect do
         recipe.find_resource!(:zen_master, "monkey")
-      }.to raise_error(Chef::Exceptions::ResourceNotFound)
+      end.to raise_error(Chef::Exceptions::ResourceNotFound)
     end
 
     it "raises if given a block" do
       resource = recipe.declare_resource(:zen_master, "monkey") do
         something false
       end
-      expect {
+      expect do
         recipe.find_resource!(:zen_master, "monkey") do
           something false
         end
-      }.to raise_error(ArgumentError)
+      end.to raise_error(ArgumentError)
     end
 
     it "returns the resource if it finds one" do
@@ -221,9 +221,9 @@ describe Chef::ResourceCollection do
 
   describe "#delete_resource!" do
     it "raises if nothing is found" do
-      expect {
+      expect do
         recipe.delete_resource!(:zen_master, "monkey")
-      }.to raise_error(Chef::Exceptions::ResourceNotFound)
+      end.to raise_error(Chef::Exceptions::ResourceNotFound)
     end
 
     it "deletes and returns the resource if it finds one" do
@@ -234,6 +234,36 @@ describe Chef::ResourceCollection do
         recipe.delete_resource!(:zen_master, "monkey")
       ).to eql(resource)
       expect(run_context.resource_collection.all_resources.size).to eql(0)
+    end
+
+    it "removes pending delayed notifications" do
+      recipe.declare_resource(:zen_master, "one")
+      recipe.declare_resource(:zen_master, "two") do
+        notifies :win, "zen_master[one]"
+      end
+      recipe.delete_resource(:zen_master, "two")
+      resource = recipe.declare_resource(:zen_master, "two")
+      expect(resource.delayed_notifications).to eql([])
+    end
+
+    it "removes pending immediate notifications" do
+      recipe.declare_resource(:zen_master, "one")
+      recipe.declare_resource(:zen_master, "two") do
+        notifies :win, "zen_master[one]", :immediate
+      end
+      recipe.delete_resource(:zen_master, "two")
+      resource = recipe.declare_resource(:zen_master, "two")
+      expect(resource.immediate_notifications).to eql([])
+    end
+
+    it "removes pending before notifications" do
+      recipe.declare_resource(:zen_master, "one")
+      recipe.declare_resource(:zen_master, "two") do
+        notifies :win, "zen_master[one]", :before
+      end
+      recipe.delete_resource(:zen_master, "two")
+      resource = recipe.declare_resource(:zen_master, "two")
+      expect(resource.before_notifications).to eql([])
     end
   end
 

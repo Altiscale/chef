@@ -1,4 +1,156 @@
-# Change Log
+## [v12.16.42](https://github.com/chef/chef/tree/v12.16.42) (2016-11-04)
+[Full Changelog](https://github.com/chef/chef/compare/v12.15.19...v12.16.42)
+
+**Implemented enhancements:**
+
+- Core: improve readability of property-resource namespace collision exception message [\#5500](https://github.com/chef/chef/pull/5500) ([lamont-granquist](https://github.com/lamont-granquist))
+- Omnibus: Pull in Ohai 8.21.0 and other new deps [\#5499](https://github.com/chef/chef/pull/5499) ([tas50](https://github.com/tas50))
+- Core: Add deprecations to Data Collector run completion messages [\#5496](https://github.com/chef/chef/pull/5496) ([adamleff](https://github.com/adamleff))
+- Core: add attribute\_changed hook to event handlers [\#5495](https://github.com/chef/chef/pull/5495) ([lamont-granquist](https://github.com/lamont-granquist))
+- Knife: Add the `--field-separator` flag to knife show commands [\#5489](https://github.com/chef/chef/pull/5489) ([tduffield](https://github.com/tduffield))
+- Core: Enable Signed Header Auth for Data Collector, and Configure the Data Collector Automatically [\#5487](https://github.com/chef/chef/pull/5487) ([danielsdeleo](https://github.com/danielsdeleo))
+- Core: set use\_inline\_resources in package superclass [\#5483](https://github.com/chef/chef/pull/5483) ([lamont-granquist](https://github.com/lamont-granquist))
+- Package: Add new "lock" action for apt, yum and zypper packages [\#5395](https://github.com/chef/chef/pull/5395) ([yeoldegrove](https://github.com/yeoldegrove))
+
+**Fixed bugs:**
+
+- Enable data collector w/o token for solo, but require explicit URL [\#5511](https://github.com/chef/chef/pull/5511) ([danielsdeleo](https://github.com/danielsdeleo))
+- Core: Include chef/chef\_class in Chef::REST for method log\_deprecation [\#5504](https://github.com/chef/chef/pull/5504) ([smalltown](https://github.com/smalltown))
+- Knife: Updating knife ssl fetch to correctly store certificate when it does not have a CN [\#5498](https://github.com/chef/chef/pull/5498) ([tyler-ball](https://github.com/tyler-ball))
+- Knife: Fixed knife download cookbooks issue which used to corrupt the certificate files each time the command was fired. [\#5494](https://github.com/chef/chef/pull/5494) ([Aliasgar16](https://github.com/Aliasgar16))
+- Solaris: Properly check lock status of users on solaris2 [\#5486](https://github.com/chef/chef/pull/5486) ([tduffield](https://github.com/tduffield))
+- Solaris: Fix IPS package must create symlinks to package commands [\#5485](https://github.com/chef/chef/pull/5485) ([jaymalasinha](https://github.com/jaymalasinha))
+
+## [v12.15.19](https://github.com/chef/chef/tree/v12.15.19) (2016-10-07)
+[Full Changelog](https://github.com/chef/chef/compare/v12.14.89...v12.15.19)
+
+**Enhancements:**
+
+- Adding support for rfc 62 exit code 213 (Chef upgrades) [\#5428](https://github.com/chef/chef/pull/5428) ([jeremymv2](https://github.com/jeremymv2))
+- Allow raw_key to override the configured signing\_key [\#5314](https://github.com/chef/chef/pull/5314) ([thommay](https://github.com/thommay))
+- Set yum\_repository gpgcheck default to true [\#5398](https://github.com/chef/chef/pull/5398) ([shortdudey123](https://github.com/shortdudey123))
+- Allow deletion of registry\_key without the need for users to pass data key in values hash. [\#5359](https://github.com/chef/chef/pull/5359) ([Aliasgar16](https://github.com/Aliasgar16))
+- Adding support for cab files to Chef package provider on windows [\#5285](https://github.com/chef/chef/pull/5285) ([Vasu1105](https://github.com/Vasu1105))
+- Ignore unknown metadata fields in metadata.rb [\#5299](https://github.com/chef/chef/pull/5299) ([lamont-granquist](https://github.com/lamont-granquist))
+
+**Fixed Bugs:**
+
+- knife ssh: use the command line prompt for sudo if set [\#5427](https://github.com/chef/chef/pull/5427) ([lamont-granquist](https://github.com/lamont-granquist))
+- User provider: Fix manage\_home provider inconsistency for Mac and FreeBSD providers [\#5423](https://github.com/chef/chef/pull/5423) ([lamont-granquist](https://github.com/lamont-granquist))
+- Fix for "Chefspec template rendering fails when cookbook\_name != directory name" [\#5417](https://github.com/chef/chef/pull/5417) ([lamont-granquist](https://github.com/lamont-granquist))
+- Fix solaris handling for useradd -m/-M behavior [\#5408](https://github.com/chef/chef/pull/5408) ([coderanger](https://github.com/coderanger))
+- Normalize full key name to avoid resource update on identical key names [\#5290](https://github.com/chef/chef/pull/5290) ([bai](https://github.com/bai))
+- Add trailing newline to generated 15update-stamp [\#5382](https://github.com/chef/chef/pull/5382) ([pwalz](https://github.com/pwalz))
+- Invalid `dsc_scripts` should fail the run [\#5377](https://github.com/chef/chef/pull/5377) ([NimishaS](https://github.com/NimishaS))
+- Revert --local filter for gems installed from  paths [\#5379](https://github.com/chef/chef/pull/5379) ([mwrock](https://github.com/mwrock))
+- Fix knife list\_commands\(\) [\#5386](https://github.com/chef/chef/pull/5386) ([lamont-granquist](https://github.com/lamont-granquist))
+- Don't use -r for users or groups on Solaris. [\#5355](https://github.com/chef/chef/pull/5355) ([coderanger](https://github.com/coderanger))
+- Chef 12 Attribute Regression [\#5360](https://github.com/chef/chef/pull/5360) ([gbagnoli](https://github.com/gbagnoli))
+- Handling Errno::ETIMEDOUT [\#5358](https://github.com/chef/chef/pull/5358) ([NimishaS](https://github.com/NimishaS))
+
+## [v12.14.89](https://github.com/chef/chef/tree/v12.14.89) (2016-09-22)
+[Full Changelog](https://github.com/chef/chef/compare/v12.14.77...v12.14.89)
+
+**Fixed Bugs:**
+
+- Revert "Verify systemd\_unit file during create" [\#5326](https://github.com/chef/chef/pull/5326) ([mwrock](https://github.com/mwrock))
+- Fix method\_access and array handling in node presenter [\#5351](https://github.com/chef/chef/pull/5351) ([lamont-granquist](https://github.com/lamont-granquist))
+- Fixed undefined short\_cksum method issue and checksum in uppercase issue for windows\_package resource. [\#5332](https://github.com/chef/chef/pull/5332) ([Aliasgar16](https://github.com/Aliasgar16))
+- Fix makecache action name in yum\_repository [\#5348](https://github.com/chef/chef/pull/5348) ([tas50](https://github.com/tas50))
+
+## [v12.14.77](https://github.com/chef/chef/tree/v12.14.77) (2016-09-19)
+[Full Changelog](https://github.com/chef/chef/compare/v12.14.60...v12.14.77)
+
+**Fixed Bugs:**
+
+- Revert supports\[:manage\_home\] behavior [\#5322](https://github.com/chef/chef/pull/5322) ([lamont-granquist](https://github.com/lamont-granquist))
+- Preserve the extension of the file in the rendered tempfile in File providers [\#5327](https://github.com/chef/chef/pull/5327) ([lamont-granquist](https://github.com/lamont-granquist))
+- Allow the :delete action for yum\_repository + fix old property support [\#5320](https://github.com/chef/chef/pull/5320) ([tas50](https://github.com/tas50))
+
+## [v12.14.60](https://github.com/chef/chef/tree/v12.14.60) (2016-09-09)
+[Full Changelog](https://github.com/chef/chef/compare/v12.13.37...v12.14.60)
+
+**Enhancements:**
+
+- Only support Solaris 10u11 and newer [\#5264](https://github.com/chef/chef/pull/5264) ([rhass](https://github.com/rhass))
+- Added code to handle deletion of directories on Windows that are symlinks. [\#5234](https://github.com/chef/chef/pull/5234) ([Aliasgar16](https://github.com/Aliasgar16))
+- Readability improvements to options parsing code [\#5289](https://github.com/chef/chef/pull/5289) ([lamont-granquist](https://github.com/lamont-granquist))
+- Add Hash type to launchd:keep\_alive [\#5182](https://github.com/chef/chef/pull/5182) ([erikng](https://github.com/erikng))
+- Added timeout during removing of windows package [\#5250](https://github.com/chef/chef/pull/5250) ([dheerajd-msys](https://github.com/dheerajd-msys))
+- Bump openssl to 1.0.2h [\#5260](https://github.com/chef/chef/pull/5260) ([lamont-granquist](https://github.com/lamont-granquist))
+- Rewrite linux\_user provider check\_lock [\#5248](https://github.com/chef/chef/pull/5248) ([lamont-granquist](https://github.com/lamont-granquist))
+- Allow flagging a resource property as sensitive [\#5185](https://github.com/chef/chef/pull/5185) ([adamleff](https://github.com/adamleff))
+- Rewrite linux useradd provider [\#5243](https://github.com/chef/chef/pull/5243) ([lamont-granquist](https://github.com/lamont-granquist))
+- Add yum_repository resource from the yum cookbook [\#5187](https://github.com/chef/chef/pull/5187) ([thommay](https://github.com/thommay))
+- Verify systemd\_unit file during create [\#5210](https://github.com/chef/chef/pull/5210) ([mal](https://github.com/mal))
+- Add a warning for guard blocks that return a non-empty string [\#5233](https://github.com/chef/chef/pull/5233) ([coderanger](https://github.com/coderanger))
+- Forward package cookbook\_name to underlying remote\_file [\#5128](https://github.com/chef/chef/pull/5128) ([Annih](https://github.com/Annih))
+- Fix "URI.escape is obsolete" warnings [\#5230](https://github.com/chef/chef/pull/5230) ([jkeiser](https://github.com/jkeiser))
+- Remove ruby 2.1 support [\#5220](https://github.com/chef/chef/pull/5220) ([lamont-granquist](https://github.com/lamont-granquist))
+- User provider manage\_home behavior and refactor [\#5122](https://github.com/chef/chef/pull/5122) ([lamont-granquist](https://github.com/lamont-granquist))
+- Fix Style/BlockDelimiters, Style/MultilineBlockLayout and 0.42.0 engine upgrade [\#5218](https://github.com/chef/chef/pull/5218) ([lamont-granquist](https://github.com/lamont-granquist))
+- Switch from Ruby 2.1.9 to Ruby 2.3.1 [\#5190](https://github.com/chef/chef/pull/5190) ([jkeiser](https://github.com/jkeiser))
+- Update to latest chefstyle [\#5217](https://github.com/chef/chef/pull/5217) ([jkeiser](https://github.com/jkeiser))
+- Rubygems memory performance improvement [\#5203](https://github.com/chef/chef/pull/5203) ([lamont-granquist](https://github.com/lamont-granquist))
+- HTTP 1.1 keepalives for cookbook synchronization [\#5151](https://github.com/chef/chef/pull/5151) ([lamont-granquist](https://github.com/lamont-granquist))
+
+**Fixed Bugs:**
+
+- Fixes GH-4955, allowing local gems with remote dependencies [\#5098](https://github.com/chef/chef/pull/5098) ([jyaworski](https://github.com/jyaworski))
+- Hook up the recipe\_file\_loaded event which was defined but not actually called [\#5281](https://github.com/chef/chef/pull/5281) ([coderanger](https://github.com/coderanger))
+- fix gem\_package regression in master [\#5262](https://github.com/chef/chef/pull/5262) ([lamont-granquist](https://github.com/lamont-granquist))
+- Added fix for spaces in profile identifiers [\#5159](https://github.com/chef/chef/pull/5159) ([natewalck](https://github.com/natewalck))
+- Add a hook for compat\_resource [\#5259](https://github.com/chef/chef/pull/5259) ([lamont-granquist](https://github.com/lamont-granquist))
+- Fix flush\_cache issues in yum\_package [\#5258](https://github.com/chef/chef/pull/5258) ([jaymzh](https://github.com/jaymzh))
+- Use symbols instead of strings as keys for systemd user property [\#5241](https://github.com/chef/chef/pull/5241) ([joshuamiller01](https://github.com/joshuamiller01))
+- Use upstart goal state as service status [\#5249](https://github.com/chef/chef/pull/5249) ([evan2645](https://github.com/evan2645))
+- Fix the useradd test filters [\#5236](https://github.com/chef/chef/pull/5236) ([lamont-granquist](https://github.com/lamont-granquist))
+- Fix specify members of group on suse/openbsd/solaris2/hpux [\#5152](https://github.com/chef/chef/pull/5152) ([tas50](https://github.com/tas50))
+- Fix cookbook upload of symlinked cookbooks in Ruby 2.3 on Windows [\#5216](https://github.com/chef/chef/pull/5216) ([jkeiser](https://github.com/jkeiser))
+- Don't use relative\_path\_from on glob results [\#5215](https://github.com/chef/chef/pull/5215) ([jkeiser](https://github.com/jkeiser))
+
+## [v12.13.37](https://github.com/chef/chef/tree/v12.13.37) (2016-08-12)
+[Full Changelog](https://github.com/chef/chef/compare/v12.13.30...v12.13.37)
+
+**Enhancements:**
+
+- Bumping ohai and mixlib-log to fix regression [\#5197](https://github.com/chef/chef/pull/5197) ([mwrock](https://github.com/mwrock))
+- Remove requires in Chef::Recipe that are no longer necessary [\#5189](https://github.com/chef/chef/pull/5189) ([lamont-granquist](https://github.com/lamont-granquist))
+
+## [v12.13.30](https://github.com/chef/chef/tree/v12.13.30) (2016-08-05)
+[Full Changelog](https://github.com/chef/chef/compare/v12.12.15...v12.13.30)
+
+**Enhancements:**
+
+- noop apt_update similar to apt_repository [\#5173](https://github.com/chef/chef/pull/5173) ([lamont-granquist](https://github.com/lamont-granquist))
+- Bump dependencies to bring in Ohai 8.18 [\#5168](https://github.com/chef/chef/pull/5168) ([tas50](https://github.com/tas50))
+- Make Chef work with Ruby 2.3, update Ruby to 2.1.9 [\#5165](https://github.com/chef/chef/pull/5165) ([jkeiser](https://github.com/jkeiser))
+- Log cause chain for exceptions [\#3354](https://github.com/chef/chef/pull/3354) ([jaym](https://github.com/jaym))
+- First pass on --config-option handling. [\#5045](https://github.com/chef/chef/pull/5045) ([coderanger](https://github.com/coderanger))
+- Add bootstrap proxy authentication support. [\#4059](https://github.com/chef/chef/pull/4059) ([yossigo](https://github.com/yossigo))
+- Support setting an empty string for cron attrs [\#5127](https://github.com/chef/chef/pull/5127) ([thommay](https://github.com/thommay))
+- Also clear notifications when deleting a resource. [\#5146](https://github.com/chef/chef/pull/5146) ([coderanger](https://github.com/coderanger))
+- Clean up subscribes internals and notification storage. [\#5145](https://github.com/chef/chef/pull/5145) ([coderanger](https://github.com/coderanger))
+- Cache ChefFS children [\#5131](https://github.com/chef/chef/pull/5131) ([thommay](https://github.com/thommay))
+- Update to rspec 3.5 [\#5126](https://github.com/chef/chef/pull/5126) ([thommay](https://github.com/thommay))
+- Add `chef\_data\_bag\_item` to Cheffish DSL methods [\#5125](https://github.com/chef/chef/pull/5125) ([danielsdeleo](https://github.com/danielsdeleo))
+- replace glibc resolver with ruby resolver [\#5123](https://github.com/chef/chef/pull/5123) ([lamont-granquist](https://github.com/lamont-granquist))
+- The user must specify a category for a new cookbook [\#5091](https://github.com/chef/chef/pull/5091) ([thommay](https://github.com/thommay))
+- Warn if not installing an individual bff fileset [\#5093](https://github.com/chef/chef/pull/5093) ([mwrock](https://github.com/mwrock))
+- Use Mixlib::Archive to extract tarballs [\#5080](https://github.com/chef/chef/pull/5080) ([thommay](https://github.com/thommay))
+- Data Collector server URL validation, and disable on host down [\#5076](https://github.com/chef/chef/pull/5076) ([adamleff](https://github.com/adamleff))
+
+**Fixed Bugs:**
+
+- Don't log error for reporting audit data in when in chef-zero [\#5016](https://github.com/chef/chef/pull/5016) ([erichelgeson](https://github.com/erichelgeson))
+- Invalidate the file system cache on deletion [\#5154](https://github.com/chef/chef/pull/5154) ([thommay](https://github.com/thommay))
+- Root ACLs are a top level json file not a sub-directory [\#5155](https://github.com/chef/chef/pull/5155) ([thommay](https://github.com/thommay))
+- Install nokogiri and pin mixlib-cli [\#5118](https://github.com/chef/chef/pull/5118) ([ksubrama](https://github.com/ksubrama))
+- Ensure that the valid option is given back to the option parser [\#5114](https://github.com/chef/chef/pull/5114) ([dldinternet](https://github.com/dldinternet))
+- Fixed regex for zypper version 1.13.\*.  [\#5109](https://github.com/chef/chef/pull/5109) ([yeoldegrove](https://github.com/yeoldegrove))
+- add back method\_missing support to set\_unless [\#5103](https://github.com/chef/chef/pull/5103) ([lamont-granquist](https://github.com/lamont-granquist))
+- Fix \#5094 node.default\_unless issue in 12.12.13 [\#5097](https://github.com/chef/chef/pull/5097) ([lamont-granquist](https://github.com/lamont-granquist))
+- Fix \#5078 using cwd parameter instead of Dir.pwd [\#5079](https://github.com/chef/chef/pull/5079) ([Tensibai](https://github.com/Tensibai))
 
 ## [v12.12.15](https://github.com/chef/chef/tree/v12.12.15) (2016-07-08)
 [Full Changelog](https://github.com/chef/chef/compare/v12.12.13...v12.12.15)
@@ -94,7 +246,7 @@
 - Update rubygems provider to support local install of gems if so specified [\#4847](https://github.com/chef/chef/pull/4847) ([PrajaktaPurohit](https://github.com/PrajaktaPurohit))
 - fix details in with\_run\_context [\#4839](https://github.com/chef/chef/pull/4839) ([lamont-granquist](https://github.com/lamont-granquist))
 - Lock dependencies of chef through a `Gemfile.lock` [\#4820](https://github.com/chef/chef/pull/4820) ([jkeiser](https://github.com/jkeiser))
-- add better resource manipulation API [\#4834](https://github.com/chef/chef/pull/4834) ([lamont-granquist](https://github.com/lamont-granquist)) 
+- add better resource manipulation API [\#4834](https://github.com/chef/chef/pull/4834) ([lamont-granquist](https://github.com/lamont-granquist))
 - add nillable apt\_repository and nillable properties [\#4832](https://github.com/chef/chef/pull/4832) ([lamont-granquist](https://github.com/lamont-granquist))
 
 ## [v12.9](https://github.com/chef/chef/tree/v12.9.38) (2016-04-09)
@@ -595,7 +747,7 @@ of partial templates.
   Typo fixes
 * [**Tim Smith**](https://github.com/tas50)
   Typo fixes
-* [Pull 2505](https://github.com/opscode/chef/pull/2505) Make Chef handle URIs in a case-insensitive manner
+* [Pull 2505](https://github.com/chef/chef/pull/2505) Make Chef handle URIs in a case-insensitive manner
 * [**Phil Dibowitz**](https://github.com/jaymzh):
   Drop SSL warnings now that we have a safe default
 * [Pull 2684](https://github.com/chef/chef/pull/2684) Remove ole_initialize/uninitialize which cause problems with Ruby >= 2
@@ -681,32 +833,32 @@ of partial templates.
 
 ## 12.0.3
 * [**Phil Dibowitz**](https://github.com/jaymzh):
-[Issue 2594](https://github.com/opscode/chef/issues/2594) Restore missing require in `digester`.
+[Issue 2594](https://github.com/chef/chef/issues/2594) Restore missing require in `digester`.
 
 ## 12.0.2
-* [Issue 2578](https://github.com/opscode/chef/issues/2578) Check that `installed` is not empty for `keg_only` formula in Homebrew provider
-* [Issue 2609](https://github.com/opscode/chef/issues/2609) Resolve the circular dependency between ProviderResolver and Resource.
-* [Issue 2596](https://github.com/opscode/chef/issues/2596) Fix nodes not writing to disk
-* [Issue 2580](https://github.com/opscode/chef/issues/2580) Make sure the relative paths are preserved when using link resource.
-* [Pull 2630](https://github.com/opscode/chef/pull/2630) Improve knife's SSL error messaging
-* [Issue 2606](https://github.com/opscode/chef/issues/2606) chef 12 ignores default_release for apt_package
-* [Issue 2602](https://github.com/opscode/chef/issues/2602) Fix `subscribes` resource notifications.
-* [Issue 2578](https://github.com/opscode/chef/issues/2578) Check that `installed` is not empty for `keg_only` formula in Homebrew provider.
+* [Issue 2578](https://github.com/chef/chef/issues/2578) Check that `installed` is not empty for `keg_only` formula in Homebrew provider
+* [Issue 2609](https://github.com/chef/chef/issues/2609) Resolve the circular dependency between ProviderResolver and Resource.
+* [Issue 2596](https://github.com/chef/chef/issues/2596) Fix nodes not writing to disk
+* [Issue 2580](https://github.com/chef/chef/issues/2580) Make sure the relative paths are preserved when using link resource.
+* [Pull 2630](https://github.com/chef/chef/pull/2630) Improve knife's SSL error messaging
+* [Issue 2606](https://github.com/chef/chef/issues/2606) chef 12 ignores default_release for apt_package
+* [Issue 2602](https://github.com/chef/chef/issues/2602) Fix `subscribes` resource notifications.
+* [Issue 2578](https://github.com/chef/chef/issues/2578) Check that `installed` is not empty for `keg_only` formula in Homebrew provider.
 * [**gh2k**](https://github.com/gh2k):
-  [Issue 2625](https://github.com/opscode/chef/issues/2625) Fix missing `shell_out!` for `windows_package` resource
+  [Issue 2625](https://github.com/chef/chef/issues/2625) Fix missing `shell_out!` for `windows_package` resource
 * [**BackSlasher**](https://github.com/BackSlasher):
-  [Issue 2634](https://github.com/opscode/chef/issues/2634) Fix `option ':command' is not a valid option` error in subversion provider.
+  [Issue 2634](https://github.com/chef/chef/issues/2634) Fix `option ':command' is not a valid option` error in subversion provider.
 * [**Seth Vargo**](https://github.com/sethvargo):
-  [Issue 2345](https://github.com/opscode/chef/issues/2345) Allow knife to install cookbooks with metadata.json.
+  [Issue 2345](https://github.com/chef/chef/issues/2345) Allow knife to install cookbooks with metadata.json.
 
 ## 12.0.1
 
-* [Issue 2552](https://github.com/opscode/chef/issues/2552) Create constant for LWRP before calling `provides`
-* [Issue 2545](https://github.com/opscode/chef/issues/2545) `path` attribute of `execute` resource is restored to provide backwards compatibility with Chef 11.
-* [Issue 2565](https://github.com/opscode/chef/issues/2565) Fix `Chef::Knife::Core::BootstrapContext` constructor for knife-windows compat.
-* [Issue 2566](https://github.com/opscode/chef/issues/2566) Make sure Client doesn't raise error when interval is set on Windows.
-* [Issue 2560](https://github.com/opscode/chef/issues/2560) Fix `uninitialized constant Windows::Constants` in `windows_eventlog`.
-* [Issue 2563](https://github.com/opscode/chef/issues/2563) Make sure the Chef Client rpm packages are signed with GPG keys correctly.
+* [Issue 2552](https://github.com/chef/chef/issues/2552) Create constant for LWRP before calling `provides`
+* [Issue 2545](https://github.com/chef/chef/issues/2545) `path` attribute of `execute` resource is restored to provide backwards compatibility with Chef 11.
+* [Issue 2565](https://github.com/chef/chef/issues/2565) Fix `Chef::Knife::Core::BootstrapContext` constructor for knife-windows compat.
+* [Issue 2566](https://github.com/chef/chef/issues/2566) Make sure Client doesn't raise error when interval is set on Windows.
+* [Issue 2560](https://github.com/chef/chef/issues/2560) Fix `uninitialized constant Windows::Constants` in `windows_eventlog`.
+* [Issue 2563](https://github.com/chef/chef/issues/2563) Make sure the Chef Client rpm packages are signed with GPG keys correctly.
 
 ## 12.0.0
 
@@ -819,7 +971,7 @@ of partial templates.
 * [**Ionuț Arțăriși**](https://github.com/mapleoin):
   Changed the default group provider to gpasswd on SLES versions 12 and higher.
 * [**Noah Kantrowitz**](https://github.com/coderanger):
-  Implemented [RFC017 - File Specificity Overhaul](https://github.com/opscode/chef-rfc/blob/master/rfc017-file-specificity.md).
+  Implemented [RFC017 - File Specificity Overhaul](https://github.com/chef/chef-rfc/blob/master/rfc017-file-specificity.md).
 * [**James Bence**](https://github.com/jbence):
   Improved the reliability of Git provider by making it to be more specific when selecting tags.
 * [**Jean Mertz**](https://github.com/JeanMertz):
@@ -857,7 +1009,7 @@ of partial templates.
 ### Chef Contributions
 
 * ruby 1.9.3 support is dropped
-* Added RFC-023 Chef 12 Attribute Changes (https://github.com/opscode/chef-rfc/blob/master/rfc023-chef-12-attributes-changes.md)
+* Added RFC-023 Chef 12 Attribute Changes (https://github.com/chef/chef-rfc/blob/master/rfc023-chef-12-attributes-changes.md)
 * Added os/platform_family options to provides syntax on the Chef::Resource DSL
 * Added provides methods to the Chef::Provider DSL
 * Added supported?(resource, action) class method to all Providers for late-evaluation if a provider can handle a
@@ -1112,3 +1264,6 @@ of partial templates.
 * Raise error if a guard_interpreter is specified and a block is passed to a guard (conditional)
 * Allow specifying a guard_interpreter after a conditional on a resource (Fixes #1943)
 * Windows package type should be a symbol (Fixes #1997)
+
+
+\* *This Change Log was automatically generated by [github_changelog_generator](https://github.com/skywinder/Github-Changelog-Generator)*

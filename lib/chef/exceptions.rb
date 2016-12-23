@@ -79,6 +79,7 @@ class Chef
     class Reboot < Exception; end
     class RebootPending < Exception; end
     class RebootFailed < Mixlib::ShellOut::ShellCommandFailed; end
+    class ClientUpgraded < Exception; end
     class PrivateKeyMissing < RuntimeError; end
     class CannotWritePrivateKey < RuntimeError; end
     class RoleNotFound < RuntimeError; end
@@ -184,7 +185,7 @@ class Chef
 
     # A different version of a cookbook was added to a
     # VersionedRecipeList than the one already there.
-    class CookbookVersionConflict < ArgumentError ; end
+    class CookbookVersionConflict < ArgumentError; end
 
     # does not follow X.Y.Z format. ArgumentError?
     class InvalidPlatformVersion < ArgumentError; end
@@ -245,6 +246,10 @@ class Chef
     class Win32RegBadValueSize < ArgumentError; end
     class Win32RegTypesMismatch < ArgumentError; end
 
+    # incorrect input for registry_key create action throws following error
+    class RegKeyValuesTypeMissing < ArgumentError; end
+    class RegKeyValuesDataMissing < ArgumentError; end
+
     class InvalidEnvironmentPath < ArgumentError; end
     class EnvironmentNotFound < RuntimeError; end
 
@@ -257,7 +262,7 @@ class Chef
 
     class ChildConvergeError < RuntimeError; end
 
-    class DeprecatedFeatureError < RuntimeError;
+    class DeprecatedFeatureError < RuntimeError
       def initalize(message)
         super("#{message} (raising error due to treat_deprecation_warnings_as_errors being set)")
       end

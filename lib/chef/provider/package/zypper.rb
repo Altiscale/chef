@@ -38,15 +38,15 @@ class Chef
           status = shell_out_with_timeout!("zypper --non-interactive info #{package_name}")
           status.stdout.each_line do |line|
             case line
-            when /^Version: (.+)$/
-              candidate_version = $1
-              Chef::Log.debug("#{new_resource} version #{$1}")
-            when /^Installed: Yes$/
+            when /^Version *: (.+) *$/
+              candidate_version = $1.strip
+              Chef::Log.debug("#{new_resource} version #{candidate_version}")
+            when /^Installed *: Yes *$/
               is_installed = true
               Chef::Log.debug("#{new_resource} is installed")
-            when /^Status: out-of-date \(version (.+) installed\)$/
-              current_version = $1
-              Chef::Log.debug("#{new_resource} out of date version #{$1}")
+            when /^Status *: out-of-date \(version (.+) installed\) *$/
+              current_version = $1.strip
+              Chef::Log.debug("#{new_resource} out of date version #{current_version}")
             end
           end
           current_version = candidate_version if is_installed
@@ -73,6 +73,18 @@ class Chef
           package_name_array.map do |package_name|
             versions[package_name][:current_version]
           end
+        end
+
+        def package_locked(name, version)
+          islocked = false
+          locked = shell_out_with_timeout!("zypper locks")
+          locked.stdout.each_line do |line|
+            line_package = line.split("|").shift(2).last.strip
+            if line_package == name
+              islocked = true
+            end
+          end
+          return islocked
         end
 
         def load_current_resource
@@ -105,6 +117,14 @@ class Chef
 
         def purge_package(name, version)
           zypper_package("remove --clean-deps", name, version)
+        end
+
+        def lock_package(name, version)
+          zypper_package("addlock", name, version)
+        end
+
+        def unlock_package(name, version)
+          zypper_package("removelock", name, version)
         end
 
         private

@@ -16,15 +16,20 @@
 # limitations under the License.
 #
 
-require "chef/resource"
-require "chef/dsl/declare_resource"
+require "chef/provider"
+require "chef/provider/noop"
+require "chef/mixin/which"
 
 class Chef
   class Provider
     class AptUpdate < Chef::Provider
       use_inline_resources
 
-      provides :apt_update, os: "linux"
+      extend Chef::Mixin::Which
+
+      provides :apt_update do
+        which("apt-get")
+      end
 
       APT_CONF_DIR = "/etc/apt/apt.conf.d"
       STAMP_DIR = "/var/lib/apt/periodic"
@@ -68,7 +73,7 @@ class Chef
         end
 
         declare_resource(:file, "#{APT_CONF_DIR}/15update-stamp") do
-          content "APT::Update::Post-Invoke-Success {\"touch #{STAMP_DIR}/update-success-stamp 2>/dev/null || true\";};"
+          content "APT::Update::Post-Invoke-Success {\"touch #{STAMP_DIR}/update-success-stamp 2>/dev/null || true\";};\n"
           action :create_if_missing
         end
 
@@ -78,3 +83,5 @@ class Chef
     end
   end
 end
+
+Chef::Provider::Noop.provides :apt_update

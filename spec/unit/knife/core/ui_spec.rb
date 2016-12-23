@@ -28,6 +28,7 @@ describe Chef::Knife::UI do
       :verbosity => 0,
       :yes => nil,
       :format => "summary",
+      :field_separator => ".",
     }
     @ui = Chef::Knife::UI.new(@out, @err, @in, @config)
     Chef::Config[:treat_deprecation_warnings_as_errors] = false
@@ -377,10 +378,31 @@ EOM
       end
 
       it "should return the name attribute" do
-        allow_any_instance_of(Chef::Node).to receive(:name).and_return("chef.localdomain")
         input = Chef::Node.new
+        input.name("chef.localdomain")
         @ui.config[:attribute] = "name"
         expect(@ui.format_for_display(input)).to eq( { "chef.localdomain" => { "name" => "chef.localdomain" } })
+      end
+
+      it "should return a 'class' attribute and not the node.class" do
+        input = Chef::Node.new
+        input.default["class"] = "classy!"
+        @ui.config[:attribute] = "class"
+        expect(@ui.format_for_display(input)).to eq( { nil => { "class" => "classy!" } } )
+      end
+
+      it "should return the chef_environment attribute" do
+        input = Chef::Node.new
+        input.chef_environment = "production-partner-load-integration-preview-testing"
+        @ui.config[:attribute] = "chef_environment"
+        expect(@ui.format_for_display(input)).to eq( { nil => { "chef_environment" => "production-partner-load-integration-preview-testing" } } )
+      end
+
+      it "works with arrays" do
+        input = Chef::Node.new
+        input.default["array"] = %w{zero one two}
+        @ui.config[:attribute] = "array.1"
+        expect(@ui.format_for_display(input)).to eq( { nil => { "array.1" => "one" } } )
       end
 
       it "returns nil when given an attribute path that isn't a name or attribute" do
@@ -388,6 +410,15 @@ EOM
         non_existing_path = "nope.nada.nothingtoseehere"
         @ui.config[:attribute] = non_existing_path
         expect(@ui.format_for_display(input)).to eq({ "sample-data-bag-item" => { non_existing_path => nil } })
+      end
+
+      describe "when --field-separator is passed" do
+        it "honors that separator" do
+          input = { "keys" => { "with spaces" => { "open" => { "doors" => { "with many.dots" => "when asked" } } } } }
+          @ui.config[:field_separator] = ";"
+          @ui.config[:attribute] = "keys;with spaces;open;doors;with many.dots"
+          expect(@ui.format_for_display(input)).to eq({ nil => { "keys;with spaces;open;doors;with many.dots" => "when asked" } })
+        end
       end
     end
 
@@ -500,9 +531,9 @@ EOM
 
     shared_examples_for "confirm with negative answer" do
       it "confirm should exit 3" do
-        expect {
+        expect do
           run_confirm
-        }.to raise_error(SystemExit) { |e| expect(e.status).to eq(3) }
+        end.to raise_error(SystemExit) { |e| expect(e.status).to eq(3) }
       end
 
       it "confirm_without_exit should return false" do

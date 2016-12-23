@@ -41,6 +41,14 @@ class Chef::Application::Solo < Chef::Application
     :default => Chef::Config.platform_specific_path("/etc/chef/solo.rb"),
     :description => "The configuration file to use"
 
+  option :config_option,
+    :long         => "--config-option OPTION=VALUE",
+    :description  => "Override a single configuration option",
+    :proc         => lambda { |option, existing|
+      (existing ||= []) << option
+      existing
+    }
+
   option :formatter,
     :short        => "-F FORMATTER",
     :long         => "--format FORMATTER",
@@ -158,11 +166,11 @@ class Chef::Application::Solo < Chef::Application
     :short        => "-o RunlistItem,RunlistItem...",
     :long         => "--override-runlist RunlistItem,RunlistItem...",
     :description  => "Replace current run list with specified items",
-    :proc         => lambda {|items|
+    :proc         => lambda { |items|
       items = items.split(",")
-      items.compact.map {|item|
+      items.compact.map do |item|
         Chef::RunList::RunListItem.new(item)
-      }
+      end
     }
 
   option :client_fork,

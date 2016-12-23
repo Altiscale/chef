@@ -35,6 +35,7 @@ class Chef
         REBOOT_NEEDED: 37,
         REBOOT_FAILED: 41,
         AUDIT_MODE_FAILURE: 42,
+        CLIENT_UPGRADED: 213,
       }
 
       DEPRECATED_RFC_062_EXIT_CODES = {
@@ -87,7 +88,7 @@ class Chef
 
         def normalize_legacy_exit_code(exit_code)
           case exit_code
-          when Fixnum
+          when Integer
             exit_code
           when Exception
             lookup_exit_code_by_exception(exit_code)
@@ -127,6 +128,8 @@ class Chef
             VALID_RFC_062_EXIT_CODES[:REBOOT_FAILED]
           elsif audit_failure?(exception)
             VALID_RFC_062_EXIT_CODES[:AUDIT_MODE_FAILURE]
+          elsif client_upgraded?(exception)
+            VALID_RFC_062_EXIT_CODES[:CLIENT_UPGRADED]
           else
             VALID_RFC_062_EXIT_CODES[:GENERIC_FAILURE]
           end
@@ -162,6 +165,12 @@ class Chef
           end
         end
 
+        def client_upgraded?(exception)
+          resolve_exception_array(exception).any? do |e|
+            e.is_a? Chef::Exceptions::ClientUpgraded
+          end
+        end
+
         def sigint_received?(exception)
           resolve_exception_array(exception).any? do |e|
             e.is_a? Chef::Exceptions::SigInt
@@ -190,7 +199,7 @@ class Chef
 
         def notify_on_deprecation(message)
           begin
-            Chef.log_deprecation(message)
+            Chef.deprecated(:exit_code, message)
           rescue Chef::Exceptions::DeprecatedFeatureError
             # Have to rescue this, otherwise this unhandled error preempts
             # the current exit code assignment.
@@ -198,7 +207,7 @@ class Chef
         end
 
         def deprecation_warning
-          "Chef RFC 062 (https://github.com/chef/chef-rfc/master/rfc062-exit-status.md) defines the" \
+          "Chef RFC 062 (https://github.com/chef/chef-rfc/blob/master/rfc062-exit-status.md) defines the" \
           " exit codes that should be used with Chef.  Chef::Application::ExitCode defines valid exit codes"  \
           " In a future release, non-standard exit codes will be redefined as" \
           " GENERIC_FAILURE unless `exit_status` is set to `:disabled` in your client.rb."

@@ -20,6 +20,7 @@ require "chef/knife"
 require "chef/application/knife"
 require "logger"
 require "chef/log"
+require "chef/chef_fs/file_system_cache"
 
 module KnifeSupport
   DEBUG = ENV["DEBUG"]
@@ -63,12 +64,18 @@ module KnifeSupport
         subcommand_class.load_deps
         instance = subcommand_class.new(args)
 
+        # Load configs
+        instance.merge_configs
+
         # Capture stdout/stderr
-        instance.ui = Chef::Knife::UI.new(stdout, stderr, stdin, disable_editing: true)
+        instance.ui = Chef::Knife::UI.new(stdout, stderr, stdin, instance.config.merge(disable_editing: true))
 
         # Don't print stuff
         Chef::Config[:verbosity] = ( DEBUG ? 2 : 0 )
         instance.config[:config_file] = File.join(CHEF_SPEC_DATA, "null_config.rb")
+
+        # Ensure the ChefFS cache is empty
+        Chef::ChefFS::FileSystemCache.instance.reset!
 
         # Configure chef with a (mostly) blank knife.rb
         # We set a global and then mutate it in our stub knife.rb so we can be
@@ -106,8 +113,6 @@ module KnifeSupport
       KnifeResult.new(stdout.string, stderr.string, exit_code)
     end
   end
-
-  private
 
   class KnifeResult
 

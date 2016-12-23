@@ -24,7 +24,8 @@ class Chef
   class Provider
     class User
       class Solaris < Chef::Provider::User::Useradd
-        provides :user, platform: %w{omnios solaris2}
+        provides :solaris_user
+        provides :user, os: %w{omnios solaris2}
         UNIVERSAL_OPTIONS = [[:comment, "-c"], [:gid, "-g"], [:shell, "-s"], [:uid, "-u"]]
 
         attr_writer :password_file
@@ -45,21 +46,14 @@ class Chef
         end
 
         def check_lock
-          shadow_line = shell_out!("getent", "shadow", new_resource.username).stdout.strip rescue nil
+          user = IO.read(@password_file).match(/^#{Regexp.escape(@new_resource.username)}:([^:]*):/)
 
-          # if the command fails we return nil, this can happen if the user
-          # in question doesn't exist
-          return nil if shadow_line.nil?
+          # If we're in whyrun mode, and the user is not created, we assume it will be
+          return false if whyrun_mode? && user.nil?
 
-          # convert "dave:NP:16507::::::\n" to "NP"
-          fields = shadow_line.split(":")
+          raise Chef::Exceptions::User, "Cannot determine if #{@new_resource} is locked!" if user.nil?
 
-          # '*LK*...' and 'LK' are both considered locked,
-          # so look for LK at the beginning of the shadow entry
-          # optionally surrounded by '*'
-          @locked = !!fields[1].match(/^\*?LK\*?/)
-
-          @locked
+          @locked = user[1].start_with?("*LK*")
         end
 
         def lock_user
@@ -70,7 +64,22 @@ class Chef
           shell_out!("passwd", "-u", new_resource.username)
         end
 
-      private
+        private
+
+        # Override the version from {#Useradd} because Solaris doesn't support
+        # system users and therefore has no `-r` option. This also inverts the
+        # logic for manage_home as Solaris defaults to no-manage-home and only
+        # offers `-m`.
+        #
+        # @since 12.15
+        # @api private
+        # @see Useradd#useradd_options
+        # @return [Array<String>]
+        def useradd_options
+          opts = []
+          opts << "-m" if managing_home_dir?
+          opts
+        end
 
         def manage_password
           if @current_resource.password != @new_resource.password && @new_resource.password

@@ -22,7 +22,7 @@ require "ffi_yajl"
 require "chef/data_collector/messages/helpers"
 
 describe Chef::DataCollector::Messages do
-  describe '#run_start_message' do
+  describe "#run_start_message" do
     let(:run_status) { Chef::RunStatus.new(Chef::Node.new, Chef::EventDispatch::Dispatcher.new) }
     let(:required_fields) do
       %w{
@@ -61,7 +61,7 @@ describe Chef::DataCollector::Messages do
     end
   end
 
-  describe '#run_end_message' do
+  describe "#run_end_message" do
     let(:node)       { Chef::Node.new }
     let(:run_status) { Chef::RunStatus.new(node, Chef::EventDispatch::Dispatcher.new) }
     let(:report1)  { double("report1", report_data: { "status" => "updated" }) }
@@ -113,6 +113,7 @@ describe Chef::DataCollector::Messages do
           status
           total_resource_count
           updated_resource_count
+          deprecations
         }
       end
       let(:optional_fields) { %w{error} }
@@ -164,6 +165,7 @@ describe Chef::DataCollector::Messages do
           status
           total_resource_count
           updated_resource_count
+          deprecations
         }
       end
       let(:optional_fields) { [] }

@@ -48,7 +48,13 @@ class Chef
         attr_accessor :authentication_authority
         attr_accessor :password_shadow_conversion_algorithm
 
+        provides :dscl_user
         provides :user, os: "darwin"
+
+        # Just-in-case a recipe calls the user dscl provider without specifying
+        # a gid property. Avoids chown issues in move_home when the manage_home
+        # property is in use. #5393
+        STAFF_GROUP_ID = 20
 
         def define_resource_requirements
           super
@@ -263,12 +269,12 @@ user password using shadow hash.")
         #
         # Sets the group id for the user using dscl. Fails if a group doesn't
         # exist on the system with given group id. If `gid` is not specified, it
-        # sets a default Mac user group "staff", with id 20.
+        # sets a default Mac user group "staff", with id 20 using the CONSTANT
         #
         def dscl_set_gid
           if new_resource.gid.nil?
             # XXX: mutates the new resource
-            new_resource.gid(20)
+            new_resource.gid(STAFF_GROUP_ID)
           elsif !new_resource.gid.to_s.match(/^\d+$/)
             begin
               possible_gid = run_dscl("read /Groups/#{new_resource.gid} PrimaryGroupID").split(" ").last
@@ -291,7 +297,7 @@ user password using shadow hash.")
             return
           end
 
-          if new_resource.supports[:manage_home]
+          if managing_home_dir?
             validate_home_dir_specification!
 
             if (current_resource.home == new_resource.home) && !new_home_exists?
@@ -328,7 +334,7 @@ user password using shadow hash.")
 
         def move_home
           Chef::Log.debug("#{new_resource} moving #{self} home from #{current_resource.home} to #{new_resource.home}")
-
+          new_resource.gid(STAFF_GROUP_ID) if new_resource.gid.nil?
           src = current_resource.home
           FileUtils.mkdir_p(new_resource.home)
           files = ::Dir.glob("#{Chef::Util::PathHelper.escape_glob_dir(src)}/*", ::File::FNM_DOTMATCH) - ["#{src}/.", "#{src}/.."]
@@ -437,7 +443,7 @@ user password using shadow hash.")
         # and deleting home directory if needed.
         #
         def remove_user
-          if new_resource.supports[:manage_home]
+          if managing_home_dir?
             # Remove home directory
             FileUtils.rm_rf(current_resource.home)
           end

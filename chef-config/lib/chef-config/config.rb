@@ -30,7 +30,9 @@ require "chef-config/mixin/fuzzy_hostname_matcher"
 
 require "mixlib/shellout"
 require "uri"
+require "addressable/uri"
 require "openssl"
+require "yaml"
 
 module ChefConfig
 
@@ -54,11 +56,22 @@ module ChefConfig
       path = PathHelper.cleanpath(path)
       if ChefConfig.windows?
         # turns \etc\chef\client.rb and \var\chef\client.rb into C:/chef/client.rb
-        if env["SYSTEMDRIVE"] && path[0] == '\\' && path.split('\\')[2] == "chef"
-          path = PathHelper.join(env["SYSTEMDRIVE"], path.split('\\', 3)[2])
+        # Some installations will be on different drives so use the drive that
+        # the expanded path to __FILE__ is found.
+        drive = windows_installation_drive
+        if drive && path[0] == '\\' && path.split('\\')[2] == "chef"
+          path = PathHelper.join(drive, path.split('\\', 3)[2])
         end
       end
       path
+    end
+
+    def self.windows_installation_drive
+      if ChefConfig.windows?
+        drive = File.expand_path(__FILE__).split("/", 2)[0]
+        drive = ENV["SYSTEMDRIVE"] if drive.to_s == ""
+        drive
+      end
     end
 
     def self.add_formatter(name, file_path = nil)
@@ -67,6 +80,25 @@ module ChefConfig
 
     def self.add_event_logger(logger)
       event_handlers << logger
+    end
+
+    def self.apply_extra_config_options(extra_config_options)
+      if extra_config_options
+        extra_parsed_options = extra_config_options.inject({}) do |memo, option|
+          # Sanity check value.
+          if option.empty? || !option.include?("=")
+            raise UnparsableConfigOption, "Unparsable config option #{option.inspect}"
+          end
+          # Split including whitespace if someone does truly odd like
+          # --config-option "foo = bar"
+          key, value = option.split(/\s*=\s*/, 2)
+          # Call to_sym because Chef::Config expects only symbol keys. Also
+          # runs a simple parse on the string for some common types.
+          memo[key.to_sym] = YAML.safe_load(value)
+          memo
+        end
+        merge!(extra_parsed_options)
+      end
     end
 
     # Config file to load (client.rb, knife.rb, etc. defaults set differently in knife, chef-client, etc.)
@@ -658,8 +690,26 @@ module ChefConfig
       ENV.key?("CHEF_TREAT_DEPRECATION_WARNINGS_AS_ERRORS")
     end
 
+    # Whether the resource count should be updated for log resource
+    # on running chef-client
+    default :count_log_resource_updates, true
+
     # knife configuration data
     config_context :knife do
+      # XXX: none of these default values are applied to knife (and would create a backcompat
+      # break in knife if this bug was fixed since many of the defaults below are wrong).  this appears
+      # to be the start of an attempt to be able to use config_strict_mode true?  if so, this approach
+      # is fraught with peril because this namespace is used by every knife plugin in the wild and
+      # we would need to validate every cli option in every knife attribute out there and list them all here.
+      #
+      # based on the way that people may define `knife[:foobar] = "something"` for the knife-foobar
+      # gem plugin i'm pretty certain we can never turn on anything like config_string_mode since
+      # any config value may be a typo or it may be in some gem in some knife plugin we don't know about.
+      #
+      # we do still need to maintain at least one of these so that the knife config hash gets
+      # created.
+      #
+      # this whole situation is deeply unsatisfying.
       default :ssh_port, nil
       default :ssh_user, nil
       default :ssh_attribute, nil
@@ -791,6 +841,11 @@ module ChefConfig
     default :normal_attribute_whitelist, nil
     default :override_attribute_whitelist, nil
 
+    # Pull down all the rubygems versions from rubygems and cache them the first time we do a gem_package or
+    # chef_gem install.  This is memory-expensive and will grow without bounds, but will reduce network
+    # round trips.
+    default :rubygems_cache_enabled, false
+
     config_context :windows_service do
       # Set `watchdog_timeout` to the number of seconds to wait for a chef-client run
       # to finish
@@ -813,7 +868,13 @@ module ChefConfig
       # Full URL to the endpoint that will receive our data. If nil, the
       # data collector will not run.
       # Ex: http://my-data-collector.mycompany.com/ingest
-      default :server_url,       nil
+      default(:server_url) do
+        if config_parent.solo || config_parent.local_mode
+          nil
+        else
+          File.join(config_parent.chef_server_url, "/data-collector")
+        end
+      end
 
       # An optional pre-shared token to pass as an HTTP header (x-data-collector-token)
       # that can be used to determine whether or not the poster of this
@@ -865,6 +926,13 @@ module ChefConfig
       export_no_proxy(no_proxy) if no_proxy
     end
 
+    # Character classes for Addressable
+    # See https://www.ietf.org/rfc/rfc3986.txt 3.2.1
+    # The user part may not have a : in it
+    USER = Addressable::URI::CharacterClasses::UNRESERVED + Addressable::URI::CharacterClasses::SUB_DELIMS
+    # The password part may have any valid USERINFO characters
+    PASSWORD = USER + "\\:"
+
     # Builds a proxy uri and exports it to the appropriate environment variables. Examples:
     #   http://username:password@hostname:port
     #   https://username@hostname:port
@@ -879,19 +947,17 @@ module ChefConfig
       path = "#{scheme}://#{path}" unless path.include?("://")
       # URI.split returns the following parts:
       # [scheme, userinfo, host, port, registry, path, opaque, query, fragment]
-      parts = URI.split(URI.encode(path))
-      # URI::Generic.build requires an integer for the port, but URI::split gives
-      # returns a string for the port.
-      parts[3] = parts[3].to_i if parts[3]
+      uri = Addressable::URI.encode(path, Addressable::URI)
+
       if user && !user.empty?
-        userinfo = URI.encode(URI.encode(user), "@:")
+        userinfo = Addressable::URI.encode_component(user, USER)
         if pass
-          userinfo << ":#{URI.encode(URI.encode(pass), '@:')}"
+          userinfo << ":#{Addressable::URI.encode_component(pass, PASSWORD)}"
         end
-        parts[1] = userinfo
+        uri.userinfo = userinfo
       end
 
-      path = URI::Generic.build(parts).to_s
+      path = uri.to_s
       ENV["#{scheme}_proxy".downcase] = path unless ENV["#{scheme}_proxy".downcase]
       ENV["#{scheme}_proxy".upcase] = path unless ENV["#{scheme}_proxy".upcase]
     end
@@ -937,7 +1003,7 @@ module ChefConfig
     # If there is no 'locale -a' then we return 'en_US.UTF-8' since that is the most commonly
     # available English UTF-8 locale.  However, all modern POSIXen should support 'locale -a'.
     def self.guess_internal_locale
-      # https://github.com/opscode/chef/issues/2181
+      # https://github.com/chef/chef/issues/2181
       # Some systems have the `locale -a` command, but the result has
       # invalid characters for the default encoding.
       #
@@ -986,6 +1052,12 @@ module ChefConfig
     default :ruby_encoding, Encoding::UTF_8
 
     default :rubygems_url, "https://rubygems.org"
+
+    # This controls the behavior of resource cloning (and CHEF-3694 warnings).  For Chef < 12 the behavior
+    # has been that this is 'true', in Chef 13 this will change to false.  Setting this to 'true' in Chef
+    # 13 is not a viable or supported migration strategy since Chef 13 community cookbooks will be expected
+    # to break with this setting set to 'true'.
+    default :resource_cloning, true
 
     # If installed via an omnibus installer, this gives the path to the
     # "embedded" directory which contains all of the software packaged with

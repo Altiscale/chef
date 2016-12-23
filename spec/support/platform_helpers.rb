@@ -50,21 +50,29 @@ end
 
 def windows_win2k3?
   return false unless windows?
-  wmi = WmiLite::Wmi.new
-  host = wmi.first_of("Win32_OperatingSystem")
-  (host["version"] && host["version"].start_with?("5.2"))
+  (host_version && host_version.start_with?("5.2"))
 end
 
 def windows_2008r2_or_later?
   return false unless windows?
-  wmi = WmiLite::Wmi.new
-  host = wmi.first_of("Win32_OperatingSystem")
-  version = host["version"]
-  return false unless version
-  components = version.split(".").map do |component|
+  return false unless host_version
+  components = host_version.split(".").map do |component|
     component.to_i
   end
   components.length >= 2 && components[0] >= 6 && components[1] >= 1
+end
+
+def windows_2012r2?
+  return false unless windows?
+  (host_version && host_version.start_with?("6.3"))
+end
+
+def host_version
+  @host_version ||= begin
+    wmi = WmiLite::Wmi.new
+    host = wmi.first_of("Win32_OperatingSystem")
+    host["version"]
+  end
 end
 
 def windows_powershell_dsc?
@@ -126,6 +134,10 @@ def unix?
   !windows?
 end
 
+def linux?
+  !!(RUBY_PLATFORM =~ /linux/)
+end
+
 def os_x?
   !!(RUBY_PLATFORM =~ /darwin/)
 end
@@ -169,7 +181,7 @@ def selinux_enabled?
     when 0
       return true
     else
-      raise RuntimeError, "Unknown exit code from command #{selinuxenabled_path}: #{cmd.exitstatus}"
+      raise "Unknown exit code from command #{selinuxenabled_path}: #{cmd.exitstatus}"
     end
   else
     # We assume selinux is not enabled if selinux utils are not
