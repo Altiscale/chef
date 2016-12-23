@@ -56,6 +56,7 @@ dependency "verticloudkeydb"
 dependency "alti_kerbutils"
 dependency "mysql_client"
 dependency "mysql_gem"
+dependency "alti-sentinel"
 
 # Load dynamically updated overrides
 overrides_path = File.expand_path("../../../../omnibus_overrides.rb", current_file)
