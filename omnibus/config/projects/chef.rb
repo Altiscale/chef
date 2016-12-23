@@ -57,6 +57,7 @@ dependency "verticloudkeydb"
 dependency "alti_kerbutils"
 dependency "mysql_client"
 dependency "mysql_gem"
+dependency "alti-sentinel"
 
 # All actual dependencies are in chef-complete, so that the addition
 # or removal of a dependency doesn't dirty the entire project file
