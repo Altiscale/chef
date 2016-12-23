@@ -23,15 +23,17 @@ describe Chef::Util::DSC::LocalConfigurationManager do
 
   let(:lcm) { Chef::Util::DSC::LocalConfigurationManager.new(nil, "tmp") }
 
-  let(:normal_lcm_output) { <<-EOH
+  let(:normal_lcm_output) do
+    <<-EOH
 logtype: [machinename]: LCM:  [ Start  Set      ]
 logtype: [machinename]: LCM:  [ Start  Resource ] [name]
 logtype: [machinename]: LCM:  [ End    Resource ] [name]
 logtype: [machinename]: LCM:  [ End    Set      ]
 EOH
-  }
+  end
 
-  let(:no_whatif_lcm_output) { <<-EOH
+  let(:no_whatif_lcm_output) do
+    <<-EOH
 Start-DscConfiguration : A parameter cannot be found\r\n that matches parameter name 'whatif'.
 At line:1 char:123
 + run-somecommand -whatif
@@ -39,16 +41,17 @@ At line:1 char:123
     + CategoryInfo          : InvalidArgument: (:) [Start-DscConfiguration], ParameterBindingException
     + FullyQualifiedErrorId : NamedParameterNotFound,SomeCompany.SomeAssembly.Commands.RunSomeCommand
 EOH
-  }
+  end
 
-  let(:dsc_resource_import_failure_output) { <<-EOH
+  let(:dsc_resource_import_failure_output) do
+    <<-EOH
 PowerShell provider MSFT_xWebsite failed to execute Test-TargetResource functionality with error message: Please ensure that WebAdministration module is installed. + CategoryInfo : InvalidOperation: (:) [], CimException + FullyQualifiedErrorId : ProviderOperationExecutionFailure + PSComputerName : . PowerShell provider MSFT_xWebsite failed to execute Test-TargetResource functionality with error message: Please ensure that WebAdministration module is installed. + CategoryInfo : InvalidOperation: (:) [], CimException + FullyQualifiedErrorId : ProviderOperationExecutionFailure + PSComputerName : . The SendConfigurationApply function did not succeed. + CategoryInfo : NotSpecified: (root/Microsoft/...gurationManager:String) [], CimException + FullyQualifiedErrorId : MI RESULT 1 + PSComputerName : .
 EOH
-  }
+  end
 
-  let(:lcm_status) {
+  let(:lcm_status) do
     double("LCM cmdlet status", :stderr => lcm_standard_error, :return_value => lcm_standard_output, :succeeded? => lcm_cmdlet_success)
-  }
+  end
 
   describe "test_configuration method invocation" do
     context "when interacting with the LCM using a PowerShell cmdlet" do
@@ -56,10 +59,6 @@ EOH
         allow(lcm).to receive(:run_configuration_cmdlet).and_return(lcm_status)
       end
       context "that returns successfully" do
-        before(:each) do
-          allow(lcm).to receive(:run_configuration_cmdlet).and_return(lcm_status)
-        end
-
         let(:lcm_standard_output) { normal_lcm_output }
         let(:lcm_standard_error) { nil }
         let(:lcm_cmdlet_success) { true }
@@ -77,7 +76,7 @@ EOH
         let(:lcm_standard_error) { no_whatif_lcm_output }
         let(:lcm_cmdlet_success) { false }
 
-        it 'returns true when passed to #whatif_not_supported?' do
+        it "returns true when passed to #whatif_not_supported?" do
           expect(lcm.send(:whatif_not_supported?, no_whatif_lcm_output)).to be_truthy
         end
 
@@ -133,6 +132,16 @@ EOH
 
     it "should not identify a message without a CimException reference as a resource import failure" do
       expect(lcm.send(:dsc_module_import_failure?, dsc_resource_import_failure_output.gsub("CimException", "ArgumentException"))).to be(false)
+    end
+  end
+
+  describe "#run_configuration_cmdlet" do
+    context "when invalid dsc script is given" do
+      it "raises exception" do
+        configuration_document = "invalid-config"
+        shellout_flags = { :cwd => nil, :environment => nil, :timeout => nil }
+        expect { lcm.send(:run_configuration_cmdlet, configuration_document, true, shellout_flags) }.to raise_error(Chef::Exceptions::PowershellCmdletException)
+      end
     end
   end
 end

@@ -1,35 +1,32 @@
-*This file holds "in progress" release notes for the current release under development and is intended for consumption by the Chef Documentation team.
-Please see `https://docs.chef.io/release/<major>-<minor>/release_notes.html` for the official Chef release notes.*
+_This file holds "in progress" release notes for the current release under development and is intended for consumption by the Chef Documentation team. Please see <https://docs.chef.io/release_notes.html> for the official Chef release notes._
 
-# Chef Client Release Notes 12.12:
+# Chef Client Release Notes 12.17:
 
-## Attribute read/write/unlink/exist? APIs
+## Highlighted enhancements for this release:
 
-On the node object:
+- Added msu_package resource and provider which supports the installation of Microsoft Update(MSU) packages on Windows. Example:
 
-- `node.read("foo", "bar", "baz")` equals `node["foo"]["bar"]["baz"] `but with safety (nil instead of exception)
-- `node.read!("foo", "bar", "baz")` equals `node["foo"]["bar"]["baz"]` and does raises NoMethodError
+  ```ruby
+  msu_package 'Install Windows 2012R2 Update KB2959977' do
+    source 'C:\Users\xyz\AppData\Local\Temp\Windows8.1-KB2959977-x64.msu'
+    action :install
+  end
 
-- `node.write(:default, "foo", "bar", "baz")` equals `node.default["foo"]["bar"] = "baz"` and autovivifies and replaces intermediate non-hash objects (very safe) 
-- `node.write!(:default, "foo", "bar", "baz")` equals `node.default["foo"]["bar"] = "baz"` and while it autovivifies it can raise if you hit a non-hash on an intermediate key (NoMethodError)
-- there is still no non-autovivifying writer, and i don't think anyone really wants one.
-- `node.exist?("foo", "bar")` can be used to see if `node["foo"]["bar"]` exists
+  msu_package 'Remove Windows 2012R2 Update KB2959977' do
+    source 'C:\Users\xyz\AppData\Local\Temp\Windows8.1-KB2959977-x64.msu'
+    action :remove
+  end
 
-On node levels:
+  # Using URL in source
+  msu_package 'Install Windows 2012R2 Update KB2959977' do
+    source 'https://s3.amazonaws.com/my_bucket/Windows8.1-KB2959977-x64.msu'
+    action :install
+  end
 
-- `node.default.read/read!("foo")` operates similarly to `node.read("foo")` but only on default level
-- `node.default.write/write!("foo", "bar")` is `node.write/write!(:default, "foo", "bar")`
-- `node.default.unlink/unlink!("foo")` is `node.unlink/unlink!(:default, "foo")`
-- `node.default.exist?("foo", "bar")` can be used to see if `node.default["foo"]["bar"]` exists
+  msu_package 'Remove Windows 2012R2 Update KB2959977' do
+    source 'https://s3.amazonaws.com/my_bucket/Windows8.1-KB2959977-x64.msu'
+    action :remove
+  end
+  ```
 
-Deprecations:
-
-- node.set is deprecated
-- node.set_unless is deprecated
-
-## `data_collector` enhancements
-
-- Adds `node` to the `data_collector` message
-- `data_collector` reports on all resources and not just those that have been processed
-
-## `knife cookbook create` is deprecated. Use the chef-dk's `chef generate cookbook` instead.
+## Highlighted bug fixes for this release:

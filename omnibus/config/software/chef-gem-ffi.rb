@@ -5,7 +5,8 @@
 require File.expand_path("../../../files/chef-gem/build-chef-gem/gem-install-software-def.rb", __FILE__)
 BuildChefGem::GemInstallSoftwareDef.define(self, __FILE__)
 
-license "BSD-3-CLAUSE"
+license "BSD-3-Clause"
 license_file "https://github.com/ffi/ffi/blob/master/LICENSE"
 license_file "https://github.com/ffi/ffi/blob/master/COPYING"
 license_file "https://github.com/ffi/ffi/blob/master/LICENSE.SPECS"
+skip_transitive_dependency_licensing true

@@ -85,21 +85,35 @@ describe Chef::Resource::Group, :requires_root_or_running_windows, :not_supporte
     end
   end
 
+  def node
+    node = Chef::Node.new
+    node.consume_external_attrs(ohai.data, {})
+    node
+  end
+
   def user(username)
-    usr = Chef::Resource::User.new("#{username}", run_context)
+    usr = Chef::Resource.resource_for_node(:user, node).new(username, run_context)
     if ohai[:platform_family] == "windows"
       usr.password("ComplexPass11!")
     end
     usr
   end
 
-  def create_user(username)
-    user(username).run_action(:create) if ! windows_domain_user?(username)
+  def create_user(username, uid = nil)
+    if ! windows_domain_user?(username)
+      user_to_create = user(username)
+      user_to_create.uid(uid) if uid
+      user_to_create.run_action(:create)
+    end
     # TODO: User should exist
   end
 
   def remove_user(username)
-    user(username).run_action(:remove) if ! windows_domain_user?(username)
+    if ! windows_domain_user?(username)
+      u = user(username)
+      u.manage_home false # jekins hosts throw mail spool file not owned by user if we use manage_home true
+      u.run_action(:remove)
+    end
     # TODO: User shouldn't exist
   end
 
@@ -159,8 +173,11 @@ describe Chef::Resource::Group, :requires_root_or_running_windows, :not_supporte
 
     describe "when the users exist" do
       before do
+        high_uid = 30000
         (spec_members).each do |member|
-          create_user(member)
+          remove_user(member)
+          create_user(member, high_uid)
+          high_uid += 1
         end
       end
 
@@ -282,12 +299,13 @@ describe Chef::Resource::Group, :requires_root_or_running_windows, :not_supporte
   let(:group_name) { "group#{SecureRandom.random_number(9999)}" }
   let(:included_members) { nil }
   let(:excluded_members) { nil }
-  let(:group_resource) {
+  let(:group_resource) do
     group = Chef::Resource::Group.new(group_name, run_context)
     group.members(included_members)
     group.excluded_members(excluded_members)
+    group.gid(30000) unless ohai[:platform_family] == "mac_os_x"
     group
-  }
+  end
 
   it "append should be false by default" do
     expect(group_resource.append).to eq(false)
@@ -305,10 +323,11 @@ describe Chef::Resource::Group, :requires_root_or_running_windows, :not_supporte
     end
 
     describe "when group name is length 256", :windows_only do
-      let!(:group_name) { "theoldmanwalkingdownthestreetalwayshadagood\
+      let!(:group_name) do
+        "theoldmanwalkingdownthestreetalwayshadagood\
 smileonhisfacetheoldmanwalkingdownthestreetalwayshadagoodsmileonhisface\
 theoldmanwalkingdownthestreetalwayshadagoodsmileonhisfacetheoldmanwalking\
-downthestreetalwayshadagoodsmileonhisfacetheoldmanwalkingdownthestree" }
+downthestreetalwayshadagoodsmileonhisfacetheoldmanwalkingdownthestree" end
 
       it "should create a group" do
         group_resource.run_action(:create)
@@ -317,10 +336,11 @@ downthestreetalwayshadagoodsmileonhisfacetheoldmanwalkingdownthestree" }
     end
 
     describe "when group name length is more than 256", :windows_only do
-      let!(:group_name) { "theoldmanwalkingdownthestreetalwayshadagood\
+      let!(:group_name) do
+        "theoldmanwalkingdownthestreetalwayshadagood\
 smileonhisfacetheoldmanwalkingdownthestreetalwayshadagoodsmileonhisface\
 theoldmanwalkingdownthestreetalwayshadagoodsmileonhisfacetheoldmanwalking\
-downthestreetalwayshadagoodsmileonhisfacetheoldmanwalkingdownthestreeQQQQQQ" }
+downthestreetalwayshadagoodsmileonhisfacetheoldmanwalkingdownthestreeQQQQQQ" end
 
       it "should not create a group" do
         expect { group_resource.run_action(:create) }.to raise_error(ArgumentError)
@@ -405,6 +425,7 @@ downthestreetalwayshadagoodsmileonhisfacetheoldmanwalkingdownthestreeQQQQQQ" }
       end
 
       it "does not raise an error on manage" do
+        allow(Etc).to receive(:getpwnam).and_return(double("User"))
         expect { group_resource.run_action(:manage) }.not_to raise_error
       end
     end

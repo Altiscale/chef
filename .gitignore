@@ -43,3 +43,10 @@ kitchen-tests/nodes/*
 # Temporary files present during spec runs
 spec/data/test-dir
 /config/
+
+# acceptance binstubs
+acceptance/bin/*
+
+vendor/
+acceptance/vendor
+kitchen-tests/vendor

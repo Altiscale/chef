@@ -92,8 +92,8 @@ describe Chef::ResourceReporter do
 
   context "when chef fails" do
     before do
-      allow(@rest_client).to receive(:raw_request).and_return({ "result" => "ok" });
-      allow(@rest_client).to receive(:post).and_return({ "uri" => "https://example.com/reports/nodes/spitfire/runs/#{@run_id}" });
+      allow(@rest_client).to receive(:raw_request).and_return({ "result" => "ok" })
+      allow(@rest_client).to receive(:post).and_return({ "uri" => "https://example.com/reports/nodes/spitfire/runs/#{@run_id}" })
 
     end
 
@@ -259,8 +259,8 @@ describe Chef::ResourceReporter do
   describe "when generating a report for the server" do
 
     before do
-      allow(@rest_client).to receive(:raw_request).and_return({ "result" => "ok" });
-      allow(@rest_client).to receive(:post).and_return({ "uri" => "https://example.com/reports/nodes/spitfire/runs/#{@run_id}" });
+      allow(@rest_client).to receive(:raw_request).and_return({ "result" => "ok" })
+      allow(@rest_client).to receive(:post).and_return({ "uri" => "https://example.com/reports/nodes/spitfire/runs/#{@run_id}" })
 
       @resource_reporter.run_started(@run_status)
     end
@@ -664,9 +664,9 @@ describe Chef::ResourceReporter do
 
       it "fails the run and prints an message about the error" do
         expect(Chef::Log).to receive(:error).with(/500/)
-        expect {
+        expect do
           @resource_reporter.run_started(@run_status)
-        }.to raise_error(Net::HTTPServerException)
+        end.to raise_error(Net::HTTPServerException)
       end
     end
 
@@ -749,9 +749,9 @@ describe Chef::ResourceReporter do
       it "should raise if an unkwown error happens" do
         allow(@rest_client).to receive(:raw_request).and_raise(Exception.new)
 
-        expect {
+        expect do
           @resource_reporter.post_reporting_data
-        }.to raise_error(Exception)
+        end.to raise_error(Exception)
       end
     end
   end

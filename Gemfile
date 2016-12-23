@@ -20,6 +20,7 @@ gem "cheffish"
 group(:omnibus_package) do
   gem "appbundler"
   gem "rb-readline"
+  gem "nokogiri"
 end
 
 group(:omnibus_package, :pry) do
@@ -32,13 +33,18 @@ end
 group(:integration) do
   gem "chef-provisioning"
   gem "chef-provisioning-aws"
-  gem "chef-rewind"
   gem "chef-sugar"
   gem "chefspec"
   gem "halite"
   gem "poise"
+  gem "poise-boiler"
   gem "knife-windows"
   gem "foodcritic"
+
+  # We pin this so nobody brings in a cucumber-core incompatible with cucumber latest
+  gem "cucumber", ">= 2.4.0"
+  # We pin oc-chef-pedant to prevent it from updating out of lockstep with chef-zero
+  gem "oc-chef-pedant", git: "https://github.com/chef/chef-server"
 end
 
 group(:docgen) do
@@ -65,7 +71,6 @@ end
 
 group(:development, :test) do
   gem "simplecov"
-  gem "rack", "< 2.0" # 2.0 requires Ruby 2.2+
 
   # for testing new chefstyle rules
   # gem 'chefstyle', github: 'chef/chefstyle'
@@ -79,6 +84,7 @@ end
 group(:travis) do
   # See `bundler-audit` in .travis.yml
   gem "bundler-audit", git: "https://github.com/rubysec/bundler-audit.git"
+  gem "travis"
 end
 
 instance_eval(ENV["GEMFILE_MOD"]) if ENV["GEMFILE_MOD"]

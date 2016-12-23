@@ -1,10 +1,11 @@
 name "chef-complete"
 
 license :project_license
+skip_transitive_dependency_licensing true
 
 dependency "chef"
 dependency "chef-appbundle"
-dependency "chef-remove-docs"
+dependency "chef-cleanup"
 
 dependency "gem-permissions"
 dependency "shebang-cleanup"
@@ -17,5 +18,3 @@ if windows?
   dependency "ruby-windows-devkit"
   dependency "ruby-windows-devkit-bash"
 end
-
-dependency "clean-static-libs"

@@ -66,6 +66,8 @@ require "chef/util/file_edit"
 
 require "chef/config"
 
+require "chef/chef_fs/file_system_cache"
+
 if ENV["CHEF_FIPS"] == "1"
   Chef::Config.init_openssl
 end
@@ -137,6 +139,7 @@ RSpec.configure do |config|
   config.filter_run_excluding :not_supported_on_gce => true if gce?
   config.filter_run_excluding :not_supported_on_nano => true if windows_nano_server?
   config.filter_run_excluding :win2k3_only => true unless windows_win2k3?
+  config.filter_run_excluding :win2012r2_only => true unless windows_2012r2?
   config.filter_run_excluding :windows_2008r2_or_later => true unless windows_2008r2_or_later?
   config.filter_run_excluding :windows64_only => true unless windows64?
   config.filter_run_excluding :windows32_only => true unless windows32?
@@ -150,6 +153,7 @@ RSpec.configure do |config|
   config.filter_run_excluding :solaris_only => true unless solaris?
   config.filter_run_excluding :system_windows_service_gem_only => true unless system_windows_service_gem?
   config.filter_run_excluding :unix_only => true unless unix?
+  config.filter_run_excluding :linux_only => true unless linux?
   config.filter_run_excluding :aix_only => true unless aix?
   config.filter_run_excluding :debian_family_only => true unless debian_family?
   config.filter_run_excluding :supports_cloexec => true unless supports_cloexec?
@@ -171,13 +175,13 @@ RSpec.configure do |config|
 
   running_platform_arch = `uname -m`.strip unless windows?
 
-  config.filter_run_excluding :arch => lambda {|target_arch|
+  config.filter_run_excluding :arch => lambda { |target_arch|
     running_platform_arch != target_arch
   }
 
   # Functional Resource tests that are provider-specific:
   # context "on platforms that use useradd", :provider => {:user => Chef::Provider::User::Useradd}} do #...
-  config.filter_run_excluding :provider => lambda {|criteria|
+  config.filter_run_excluding :provider => lambda { |criteria|
     type, target_provider = criteria.first
 
     node = TEST_NODE.dup
@@ -200,6 +204,8 @@ RSpec.configure do |config|
   config.before(:each) do
     Chef.reset!
 
+    Chef::ChefFS::FileSystemCache.instance.reset!
+
     Chef::Config.reset
 
     # By default, treat deprecation warnings as errors in tests.
@@ -220,6 +226,7 @@ RSpec.configure do |config|
 end
 
 require "webrick/utils"
+require "thread"
 
 #    Webrick uses a centralized/synchronized timeout manager. It works by
 #    starting a thread to check for timeouts on an interval. The timeout
@@ -238,7 +245,12 @@ module WEBrick
   module Utils
     class TimeoutHandler
       def initialize
-        @timeout_info = Hash.new
+      end
+
+      def register(*args)
+      end
+
+      def cancel(*args)
       end
     end
   end

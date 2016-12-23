@@ -23,7 +23,7 @@ class Chef
   class Provider
     class User
       class Useradd < Chef::Provider::User
-        provides :user
+        # MAJOR XXX: this should become the base class of all Useradd providers instead of the linux implementation
 
         UNIVERSAL_OPTIONS = [[:comment, "-c"], [:gid, "-g"], [:password, "-p"], [:shell, "-s"], [:uid, "-u"]]
 
@@ -116,15 +116,15 @@ class Chef
                 update_options(field, option, opts)
               end
               if updating_home?
+                opts << "-d" << new_resource.home
                 if managing_home_dir?
                   Chef::Log.debug("#{new_resource} managing the users home directory")
-                  opts << "-d" << new_resource.home << "-m"
+                  opts << "-m"
                 else
                   Chef::Log.debug("#{new_resource} setting home to #{new_resource.home}")
-                  opts << "-d" << new_resource.home
                 end
               end
-              opts << "-o" if new_resource.non_unique || new_resource.supports[:non_unique]
+              opts << "-o" if non_unique?
               opts
             end
         end
@@ -141,6 +141,7 @@ class Chef
         def useradd_options
           opts = []
           opts << "-r" if new_resource.system
+          opts << "-M" unless managing_home_dir?
           opts
         end
 
@@ -151,10 +152,6 @@ class Chef
           # ::File.expand_path("\\tmp") => "C:/tmp"
           return true if @current_resource.home.nil? && new_resource.home
           new_resource.home && Pathname.new(@current_resource.home).cleanpath != Pathname.new(new_resource.home).cleanpath
-        end
-
-        def managing_home_dir?
-          new_resource.manage_home || new_resource.supports[:manage_home]
         end
 
       end

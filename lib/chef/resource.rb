@@ -181,6 +181,25 @@ class Chef
     alias_method :action=, :action
 
     #
+    # Force a delayed notification into this resource's run_context.
+    #
+    # This should most likely be paired with action :nothing
+    #
+    # @param arg [Array[Symbol], Symbol] A list of actions (e.g. `:create`)
+    #
+    def delayed_action(arg)
+      arg = Array(arg).map(&:to_sym)
+      arg.map do |action|
+        validate(
+          { action: action },
+          { action: { kind_of: Symbol, equal_to: allowed_actions } }
+        )
+        # the resource effectively sends a delayed notification to itself
+        run_context.add_delayed_action(Notification.new(self, action, self))
+      end
+    end
+
+    #
     # Sets up a notification that will run a particular action on another resource
     # if and when *this* resource is updated by an action.
     #
@@ -260,6 +279,18 @@ class Chef
     end
 
     #
+    # Token class to hold an unresolved subscribes call with an associated
+    # run context.
+    #
+    # @api private
+    # @see Resource#subscribes
+    class UnresolvedSubscribes < self
+      # The full key ise given as the name in {Resource#subscribes}
+      alias_method :to_s, :name
+      alias_method :declared_key, :name
+    end
+
+    #
     # Subscribes to updates from other resources, causing a particular action to
     # run on *this* resource when the other resource is updated.
     #
@@ -326,7 +357,7 @@ class Chef
       resources = [resources].flatten
       resources.each do |resource|
         if resource.is_a?(String)
-          resource = Chef::Resource.new(resource, run_context)
+          resource = UnresolvedSubscribes.new(resource, run_context)
         end
         if resource.run_context.nil?
           resource.run_context = run_context
@@ -485,7 +516,7 @@ class Chef
       state_properties = self.class.state_properties
       state_properties.each do |property|
         if property.identity? || property.is_set?(self)
-          state[property.name] = send(property.name)
+          state[property.name] = property.sensitive? ? "*sensitive value suppressed*" : send(property.name)
         end
       end
       state
@@ -894,9 +925,7 @@ class Chef
     # @deprecated Multiple actions are supported by resources.  Please call {}#updated_by_last_action} instead.
     #
     def updated=(true_or_false)
-      Chef::Log.warn("Chef::Resource#updated=(true|false) is deprecated. Please call #updated_by_last_action(true|false) instead.")
-      Chef::Log.warn("Called from:")
-      caller[0..3].each { |line| Chef::Log.warn(line) }
+      Chef.deprecated(:custom_resource, "Chef::Resource#updated=(true|false) is deprecated. Please call #updated_by_last_action(true|false) instead.")
       updated_by_last_action(true_or_false)
       @updated = true_or_false
     end
@@ -951,7 +980,7 @@ class Chef
     # @deprecated Use resource_name instead.
     #
     def self.dsl_name
-      Chef.log_deprecation "Resource.dsl_name is deprecated and will be removed in Chef 13.  Use resource_name instead."
+      Chef.deprecated(:custom_resource, "Resource.dsl_name is deprecated and will be removed in Chef 13.  Use resource_name instead.")
       if name
         name = self.name.split("::")[-1]
         convert_to_snake_case(name)
@@ -1029,7 +1058,7 @@ class Chef
     #
     def self.provider_base(arg = nil)
       if arg
-        Chef.log_deprecation("Resource.provider_base is deprecated and will be removed in Chef 13. Use provides on the provider, or provider on the resource, instead.")
+        Chef.deprecated(:custom_resource, "Resource.provider_base is deprecated and will be removed in Chef 13. Use provides on the provider, or provider on the resource, instead.")
       end
       @provider_base ||= arg || Chef::Provider
     end
@@ -1264,15 +1293,15 @@ class Chef
     # resolve_resource_reference on each in turn, causing them to
     # resolve lazy/forward references.
     def resolve_notification_references
-      run_context.before_notifications(self).each { |n|
+      run_context.before_notifications(self).each do |n|
         n.resolve_resource_reference(run_context.resource_collection)
-      }
-      run_context.immediate_notifications(self).each { |n|
+      end
+      run_context.immediate_notifications(self).each do |n|
         n.resolve_resource_reference(run_context.resource_collection)
-      }
-      run_context.delayed_notifications(self).each {|n|
+      end
+      run_context.delayed_notifications(self).each do |n|
         n.resolve_resource_reference(run_context.resource_collection)
-      }
+      end
     end
 
     # Helper for #notifies
@@ -1562,8 +1591,6 @@ class Chef
         @deprecated_constants ||= {}
       end
     end
-
-    private
 
     def self.remove_canonical_dsl
       if @resource_name

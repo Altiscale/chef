@@ -17,6 +17,9 @@
 # limitations under the License.
 #
 
+require "chef/node/mixin/deep_merge_cache"
+require "chef/node/mixin/immutablize_hash"
+require "chef/node/mixin/state_tracking"
 require "chef/node/immutable_collections"
 require "chef/node/attribute_collections"
 require "chef/decorator/unchain"
@@ -34,8 +37,17 @@ class Chef
     class Attribute < Mash
 
       include Immutablize
-
+      # FIXME:  what is include Enumerable doing up here, when down below we delegate
+      # most of the Enumerable/Hash things to the underlying merged ImmutableHash.  That
+      # is, in fact, the correct, thing to do, while including Enumerable to try to create
+      # a hash-like API gets lots of things wrong because of the difference between the
+      # Hash `each do |key, value|` vs the Array-like `each do |value|` API that Enumerable
+      # expects.  This include should probably be deleted?
       include Enumerable
+
+      include Chef::Node::Mixin::DeepMergeCache
+      include Chef::Node::Mixin::StateTracking
+      include Chef::Node::Mixin::ImmutablizeHash
 
       # List of the component attribute hashes, in order of precedence, low to
       # high.
@@ -175,39 +187,22 @@ class Chef
        # return the automatic level attribute component
       attr_reader :automatic
 
-       # This is used to track the top level key as we descend through method chaining into
-       # a precedence level (e.g. node.default['foo']['bar']['baz']= results in 'foo' here).  We
-       # need this so that when we hit the end of a method chain which results in a mutator method
-       # that we can invalidate the whole top-level deep merge cache for the top-level key.  It is
-       # the responsibility of the accessor on the Chef::Node object to reset this to nil, and then
-       # the first VividMash#[] call can ||= and set this to the first key we encounter.
-      attr_accessor :top_level_breadcrumb
+      def initialize(normal, default, override, automatic, node = nil)
+        @default        = VividMash.new(default, self, node, :default)
+        @env_default    = VividMash.new({}, self, node, :env_default)
+        @role_default   = VividMash.new({}, self, node, :role_default)
+        @force_default  = VividMash.new({}, self, node, :force_default)
 
-       # Cache of deep merged values by top-level key.  This is a simple hash which has keys that are the
-       # top-level keys of the node object, and we save the computed deep-merge for that key here.  There is
-       # no cache of subtrees.
-      attr_accessor :deep_merge_cache
+        @normal         = VividMash.new(normal, self, node, :normal)
 
-      def initialize(normal, default, override, automatic)
-        @default = VividMash.new(self, default)
-        @env_default = VividMash.new(self, {})
-        @role_default = VividMash.new(self, {})
-        @force_default = VividMash.new(self, {})
+        @override       = VividMash.new(override, self, node, :override)
+        @role_override  = VividMash.new({}, self, node, :role_override)
+        @env_override   = VividMash.new({}, self, node, :env_override)
+        @force_override = VividMash.new({}, self, node, :force_override)
 
-        @normal = VividMash.new(self, normal)
+        @automatic      = VividMash.new(automatic, self, node, :automatic)
 
-        @override = VividMash.new(self, override)
-        @role_override = VividMash.new(self, {})
-        @env_override = VividMash.new(self, {})
-        @force_override = VividMash.new(self, {})
-
-        @automatic = VividMash.new(self, automatic)
-
-        @merged_attributes = nil
-        @combined_override = nil
-        @combined_default = nil
-        @top_level_breadcrumb = nil
-        @deep_merge_cache = {}
+        super(nil, self, node, :merged)
       end
 
        # Debug what's going on with an attribute. +args+ is a path spec to the
@@ -235,76 +230,62 @@ class Chef
         end
       end
 
-       # Invalidate a key in the deep_merge_cache.  If called with nil, or no arg, this will invalidate
-       # the entire deep_merge cache.  In the case of the user doing node.default['foo']['bar']['baz']=
-       # that eventually results in a call to reset_cache('foo') here.  A node.default=hash_thing call
-       # must invalidate the entire cache and re-deep-merge the entire node object.
-      def reset_cache(path = nil)
-        if path.nil?
-          @deep_merge_cache = {}
-        else
-          deep_merge_cache.delete(path.to_s)
-        end
-      end
-
-      alias :reset :reset_cache
-
        # Set the cookbook level default attribute component to +new_data+.
       def default=(new_data)
         reset
-        @default = VividMash.new(self, new_data)
+        @default = VividMash.new(new_data, self, __node__, :default)
       end
 
        # Set the role level default attribute component to +new_data+
       def role_default=(new_data)
         reset
-        @role_default = VividMash.new(self, new_data)
+        @role_default = VividMash.new(new_data, self, __node__, :role_default)
       end
 
        # Set the environment level default attribute component to +new_data+
       def env_default=(new_data)
         reset
-        @env_default = VividMash.new(self, new_data)
+        @env_default = VividMash.new(new_data, self, __node__, :env_default)
       end
 
        # Set the force_default (+default!+) level attributes to +new_data+
       def force_default=(new_data)
         reset
-        @force_default = VividMash.new(self, new_data)
+        @force_default = VividMash.new(new_data, self, __node__, :force_default)
       end
 
        # Set the normal level attribute component to +new_data+
       def normal=(new_data)
         reset
-        @normal = VividMash.new(self, new_data)
+        @normal = VividMash.new(new_data, self, __node__, :normal)
       end
 
        # Set the cookbook level override attribute component to +new_data+
       def override=(new_data)
         reset
-        @override = VividMash.new(self, new_data)
+        @override = VividMash.new(new_data, self, __node__, :override)
       end
 
        # Set the role level override attribute component to +new_data+
       def role_override=(new_data)
         reset
-        @role_override = VividMash.new(self, new_data)
+        @role_override = VividMash.new(new_data, self, __node__, :role_override)
       end
 
        # Set the environment level override attribute component to +new_data+
       def env_override=(new_data)
         reset
-        @env_override = VividMash.new(self, new_data)
+        @env_override = VividMash.new(new_data, self, __node__, :env_override)
       end
 
       def force_override=(new_data)
         reset
-        @force_override = VividMash.new(self, new_data)
+        @force_override = VividMash.new(new_data, self, __node__, :force_override)
       end
 
       def automatic=(new_data)
         reset
-        @automatic = VividMash.new(self, new_data)
+        @automatic = VividMash.new(new_data, self, __node__, :automatic)
       end
 
        #
@@ -413,7 +394,53 @@ class Chef
         write(:force_override, *args, value)
       end
 
-      # method-style access to attributes
+       #
+       # Accessing merged attributes.
+       #
+       # Note that merged_attributes('foo', 'bar', 'baz') can be called to compute only the
+       # deep merge of node['foo']['bar']['baz'], but in practice we currently always compute
+       # all of node['foo'] even if the user only requires node['foo']['bar']['baz'].
+       #
+
+      def merged_attributes(*path)
+        immutablize(merge_all(path))
+      end
+
+      def combined_override(*path)
+        immutablize(merge_overrides(path))
+      end
+
+      def combined_default(*path)
+        immutablize(merge_defaults(path))
+      end
+
+      def normal_unless(*args)
+        return Decorator::Unchain.new(self, :normal_unless) unless args.length > 0
+        write(:normal, *args) if read(*args[0...-1]).nil?
+      end
+
+      def default_unless(*args)
+        return Decorator::Unchain.new(self, :default_unless) unless args.length > 0
+        write(:default, *args) if read(*args[0...-1]).nil?
+      end
+
+      def override_unless(*args)
+        return Decorator::Unchain.new(self, :override_unless) unless args.length > 0
+        write(:override, *args) if read(*args[0...-1]).nil?
+      end
+
+      def set_unless(*args)
+        Chef.deprecated(:attributes, "node.set_unless is deprecated and will be removed in Chef 14, please use node.default_unless/node.override_unless (or node.normal_unless if you really need persistence)")
+        return Decorator::Unchain.new(self, :default_unless) unless args.length > 0
+        write(:normal, *args) if read(*args[0...-1]).nil?
+      end
+
+      def has_key?(key)
+        COMPONENTS.any? do |component_ivar|
+          instance_variable_get(component_ivar).has_key?(key)
+        end
+      end
+       # method-style access to attributes (has to come after the prepended ImmutablizeHash)
 
       def read(*path)
         merged_attributes.read(*path)
@@ -443,69 +470,6 @@ class Chef
         self.send(level).unlink!(*path)
       end
 
-       #
-       # Accessing merged attributes.
-       #
-       # Note that merged_attributes('foo', 'bar', 'baz') can be called to compute only the
-       # deep merge of node['foo']['bar']['baz'], but in practice we currently always compute
-       # all of node['foo'] even if the user only requires node['foo']['bar']['baz'].
-       #
-
-      def merged_attributes(*path)
-        # immutablize(
-        merge_all(path)
-        # )
-      end
-
-      def combined_override(*path)
-        immutablize(merge_overrides(path))
-      end
-
-      def combined_default(*path)
-        immutablize(merge_defaults(path))
-      end
-
-      def normal_unless(*args)
-        return Decorator::Unchain.new(self, :normal_unless) unless args.length > 0
-        write(:normal, *args) if read(*args[0...-1]).nil?
-      end
-
-      def default_unless(*args)
-        return Decorator::Unchain.new(self, :default_unless) unless args.length > 0
-        write(:default, *args) if read(*args[0...-1]).nil?
-      end
-
-      def override_unless(*args)
-        return Decorator::Unchain.new(self, :override_unless) unless args.length > 0
-        write(:override, *args) if read(*args[0...-1]).nil?
-      end
-
-      def set_unless(*args)
-        Chef.log_deprecation("node.set_unless is deprecated and will be removed in Chef 14, please use node.default_unless/node.override_unless (or node.normal_unless if you really need persistence)")
-        return Decorator::Unchain.new(self, :default_unless) unless args.length > 0
-        write(:normal, *args) if read(*args[0...-1]).nil?
-      end
-
-      def [](key)
-        if deep_merge_cache.has_key?(key.to_s)
-          # return the cache of the deep merged values by top-level key
-          deep_merge_cache[key.to_s]
-        else
-          # save all the work of computing node[key]
-          deep_merge_cache[key.to_s] = merged_attributes(key)
-        end
-      end
-
-      def []=(key, value)
-        raise Exceptions::ImmutableAttributeModification
-      end
-
-      def has_key?(key)
-        COMPONENTS.any? do |component_ivar|
-          instance_variable_get(component_ivar).has_key?(key)
-        end
-      end
-
       alias :attribute? :has_key?
       alias :member? :has_key?
       alias :include? :has_key?
@@ -517,14 +481,14 @@ class Chef
         if symbol == :to_ary
           merged_attributes.send(symbol, *args)
         elsif args.empty?
-          Chef.log_deprecation %q{method access to node attributes (node.foo.bar) is deprecated and will be removed in Chef 13, please use bracket syntax (node["foo"]["bar"])}
+          Chef.deprecated(:attributes, %q{method access to node attributes (node.foo.bar) is deprecated and will be removed in Chef 13, please use bracket syntax (node["foo"]["bar"])})
           if key?(symbol)
             self[symbol]
           else
             raise NoMethodError, "Undefined method or attribute `#{symbol}' on `node'"
           end
         elsif symbol.to_s =~ /=$/
-          Chef.log_deprecation %q{method setting of node attributes (node.foo="bar") is deprecated and will be removed in Chef 13, please use bracket syntax (node["foo"]="bar")}
+          Chef.deprecated(:attributes, %q{method setting of node attributes (node.foo="bar") is deprecated and will be removed in Chef 13, please use bracket syntax (node["foo"]="bar")})
           key_to_set = symbol.to_s[/^(.+)=$/, 1]
           self[key_to_set] = (args.length == 1 ? args[0] : args)
         else
@@ -537,12 +501,12 @@ class Chef
       end
 
       def inspect
-        "#<#{self.class} " << (COMPONENTS + [:@merged_attributes, :@properties]).map {|iv|
+        "#<#{self.class} " << (COMPONENTS + [:@merged_attributes, :@properties]).map do |iv|
           "#{iv}=#{instance_variable_get(iv).inspect}"
-        }.join(", ") << ">"
+        end.join(", ") << ">"
       end
 
-       private
+      private
 
        # Helper method for merge_all/merge_defaults/merge_overrides.
        #
@@ -602,7 +566,7 @@ class Chef
 
         return nil if components.compact.empty?
 
-        components.inject(ImmutableMash.new({})) do |merged, component|
+        components.inject(ImmutableMash.new({}, self, __node__, :merged)) do |merged, component|
           Chef::Mixin::DeepMerge.hash_only_merge!(merged, component)
         end
       end
@@ -631,6 +595,11 @@ class Chef
           component_value = apply_path(instance_variable_get(component_ivar), path)
           Chef::Mixin::DeepMerge.deep_merge(component_value, merged)
         end
+      end
+
+       # needed for __path__
+      def convert_key(key)
+        key.kind_of?(Symbol) ? key.to_s : key
       end
 
     end

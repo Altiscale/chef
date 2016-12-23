@@ -85,6 +85,17 @@ class Chef
     attr_reader :parent_run_context
 
     #
+    # The root run context.
+    #
+    # @return [Chef::RunContext] The root run context.
+    #
+    def root_run_context
+      rc = self
+      rc = rc.parent_run_context until rc.parent_run_context.nil?
+      rc
+    end
+
+    #
     # The collection of resources intended to be converged (and able to be
     # notified).
     #
@@ -194,12 +205,10 @@ class Chef
     # @param [Chef::Resource::Notification] The notification to add.
     #
     def notifies_before(notification)
-      nr = notification.notifying_resource
-      if nr.instance_of?(Chef::Resource)
-        before_notification_collection[nr.name] << notification
-      else
-        before_notification_collection[nr.declared_key] << notification
-      end
+      # Note for the future, notification.notifying_resource may be an instance
+      # of Chef::Resource::UnresolvedSubscribes when calling {Resource#subscribes}
+      # with a string value.
+      before_notification_collection[notification.notifying_resource.declared_key] << notification
     end
 
     #
@@ -208,12 +217,10 @@ class Chef
     # @param [Chef::Resource::Notification] The notification to add.
     #
     def notifies_immediately(notification)
-      nr = notification.notifying_resource
-      if nr.instance_of?(Chef::Resource)
-        immediate_notification_collection[nr.name] << notification
-      else
-        immediate_notification_collection[nr.declared_key] << notification
-      end
+      # Note for the future, notification.notifying_resource may be an instance
+      # of Chef::Resource::UnresolvedSubscribes when calling {Resource#subscribes}
+      # with a string value.
+      immediate_notification_collection[notification.notifying_resource.declared_key] << notification
     end
 
     #
@@ -222,12 +229,10 @@ class Chef
     # @param [Chef::Resource::Notification] The notification to add.
     #
     def notifies_delayed(notification)
-      nr = notification.notifying_resource
-      if nr.instance_of?(Chef::Resource)
-        delayed_notification_collection[nr.name] << notification
-      else
-        delayed_notification_collection[nr.declared_key] << notification
-      end
+      # Note for the future, notification.notifying_resource may be an instance
+      # of Chef::Resource::UnresolvedSubscribes when calling {Resource#subscribes}
+      # with a string value.
+      delayed_notification_collection[notification.notifying_resource.declared_key] << notification
     end
 
     #
@@ -245,50 +250,29 @@ class Chef
     #
     # Get the list of before notifications sent by the given resource.
     #
-    # TODO seriously, this is actually wrong.  resource.name is not unique,
-    # you need the type as well.
-    #
     # @return [Array[Notification]]
     #
     def before_notifications(resource)
-      if resource.instance_of?(Chef::Resource)
-        return before_notification_collection[resource.name]
-      else
-        return before_notification_collection[resource.declared_key]
-      end
+      return before_notification_collection[resource.declared_key]
     end
 
     #
     # Get the list of immediate notifications sent by the given resource.
     #
-    # TODO seriously, this is actually wrong.  resource.name is not unique,
-    # you need the type as well.
-    #
     # @return [Array[Notification]]
     #
     def immediate_notifications(resource)
-      if resource.instance_of?(Chef::Resource)
-        return immediate_notification_collection[resource.name]
-      else
-        return immediate_notification_collection[resource.declared_key]
-      end
+      return immediate_notification_collection[resource.declared_key]
     end
 
     #
     # Get the list of delayed (end of run) notifications sent by the given
     # resource.
     #
-    # TODO seriously, this is actually wrong.  resource.name is not unique,
-    # you need the type as well.
-    #
     # @return [Array[Notification]]
     #
     def delayed_notifications(resource)
-      if resource.instance_of?(Chef::Resource)
-        return delayed_notification_collection[resource.name]
-      else
-        return delayed_notification_collection[resource.declared_key]
-      end
+      return delayed_notification_collection[resource.declared_key]
     end
 
     #
@@ -597,17 +581,17 @@ ERROR_MESSAGE
       # These need to be settable so deploy can run a resource_collection
       # independent of any cookbooks via +recipe_eval+
       def audits=(value)
-        Chef.log_deprecation("Setting run_context.audits will be removed in a future Chef.  Use run_context.create_child to create a new RunContext instead.")
+        Chef.deprecated(:internal_api, "Setting run_context.audits will be removed in a future Chef.  Use run_context.create_child to create a new RunContext instead.")
         @audits = value
       end
 
       def immediate_notification_collection=(value)
-        Chef.log_deprecation("Setting run_context.immediate_notification_collection will be removed in a future Chef.  Use run_context.create_child to create a new RunContext instead.")
+        Chef.deprecated(:internal_api, "Setting run_context.immediate_notification_collection will be removed in a future Chef.  Use run_context.create_child to create a new RunContext instead.")
         @immediate_notification_collection = value
       end
 
       def delayed_notification_collection=(value)
-        Chef.log_deprecation("Setting run_context.delayed_notification_collection will be removed in a future Chef.  Use run_context.create_child to create a new RunContext instead.")
+        Chef.deprecated(:internal_api, "Setting run_context.delayed_notification_collection will be removed in a future Chef.  Use run_context.create_child to create a new RunContext instead.")
         @delayed_notification_collection = value
       end
     end
@@ -680,14 +664,17 @@ ERROR_MESSAGE
         notifies_immediately
         notifies_delayed
         parent_run_context
+        root_run_context
         resource_collection
         resource_collection=
       }.map { |x| x.to_sym }
 
       # Verify that we didn't miss any methods
-      missing_methods = superclass.instance_methods(false) - instance_methods(false) - CHILD_STATE
-      if !missing_methods.empty?
-        raise "ERROR: not all methods of RunContext accounted for in ChildRunContext! All methods must be marked as child methods with CHILD_STATE or delegated to the parent_run_context. Missing #{missing_methods.join(", ")}."
+      unless @__skip_method_checking # hook specifically for compat_resource
+        missing_methods = superclass.instance_methods(false) - instance_methods(false) - CHILD_STATE
+        if !missing_methods.empty?
+          raise "ERROR: not all methods of RunContext accounted for in ChildRunContext! All methods must be marked as child methods with CHILD_STATE or delegated to the parent_run_context. Missing #{missing_methods.join(", ")}."
+        end
       end
     end
   end
