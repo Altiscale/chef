@@ -2,7 +2,7 @@
 # so we can take advantage of omnibus's caching. Just duplicate this file and
 # add the new software def to chef software def if you want to separate
 # another gem's installation.
-require File.expand_path("../../../files/chef-gem/build-chef-gem/gem-install-software-def.rb", __FILE__)
+require_relative "../../files/chef-gem/build-chef-gem/gem-install-software-def"
 BuildChefGem::GemInstallSoftwareDef.define(self, __FILE__)
 
 license "Apache-2.0"
