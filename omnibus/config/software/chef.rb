@@ -54,7 +54,7 @@ end
 
 build do
   # This is where we get the definitions below
-  require File.expand_path("../../files/chef/build-chef.rb", __FILE__)
+  require_relative "../../files/chef/build-chef"
   extend BuildChef
 
   project_env = env.dup

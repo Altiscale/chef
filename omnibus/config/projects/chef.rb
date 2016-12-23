@@ -44,14 +44,7 @@ if windows? || rhel?
   override :fips, enabled: true
 end
 
-dependency "preparation"
-dependency "rb-readline" if windows?
-dependency "nokogiri"
-dependency "pry"
-dependency "chef"
-dependency "shebang-cleanup"
-dependency "version-manifest"
-dependency "openssl-customization"
+# Altiscale dependencies
 dependency "verticloudkeydb"
 dependency "alti_kerbutils"
 dependency "mysql_client"
