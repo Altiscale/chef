@@ -44,13 +44,6 @@ if windows? || rhel?
   override :fips, enabled: true
 end
 
-# Altiscale dependencies
-dependency "verticloudkeydb"
-dependency "alti_kerbutils"
-dependency "mysql_client"
-dependency "mysql_gem"
-dependency "alti-sentinel"
-
 # Load dynamically updated overrides
 overrides_path = File.expand_path("../../../../omnibus_overrides.rb", current_file)
 instance_eval(IO.read(overrides_path), overrides_path)
@@ -62,6 +55,13 @@ dependency "preparation"
 # All actual dependencies are in chef-complete, so that the addition
 # or removal of a dependency doesn't dirty the entire project file
 dependency "chef-complete"
+
+# Altiscale dependencies
+dependency "verticloudkeydb"
+dependency "alti_kerbutils"
+dependency "mysql_client"
+dependency "mysql_gem"
+dependency "alti-sentinel"
 
 package :rpm do
   signing_passphrase ENV["OMNIBUS_RPM_SIGNING_PASSPHRASE"]
