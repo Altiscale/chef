@@ -1,6 +1,7 @@
 # based on gitlab's implementation of the same
 name "mysql_client"
 default_version "5.5.37"
+fatal_licensing_warnings true
 
 dependency "openssl"
 dependency "zlib"
