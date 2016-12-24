@@ -4,6 +4,7 @@
 # consuming already published gems
 
 name "alti_kerbutils"
+skip_transitive_dependency_licensing true
 
 build do
   gem "sources -a https://gems.service.verticloud.com"

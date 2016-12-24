@@ -5,6 +5,7 @@
 
 name "alti-sentinel"
 default_version "0.1.0"
+skip_transitive_dependency_licensing true
 
 build do
   gem "sources -a https://gems.service.verticloud.com"
