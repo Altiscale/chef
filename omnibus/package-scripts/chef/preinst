@@ -1,0 +1,8 @@
+#!/bin/sh
+#
+# Perform necessary graphite setup steps
+# before package is installed.
+#
+
+mkdir -p /persist
+
