@@ -20,6 +20,7 @@ maintainer "Chef Software, Inc. <maintainers@chef.io>"
 homepage "https://www.chef.io"
 license "Apache-2.0"
 license_file "../LICENSE"
+default_root '/persist'
 
 build_iteration 1
 # Do not use __FILE__ after this point, use current_file. If you use __FILE__
