@@ -4,5 +4,4 @@
 # before package is installed.
 #
 
-mkdir -p /persist
-
+mkdir -p /mnt/flash
