@@ -36,7 +36,7 @@ if windows?
   install_dir  "#{default_root}/opscode/#{name}"
   package_name "chef-client"
 else
-  install_dir "/persist/#{name}"
+  install_dir "/mnt/flash/#{name}"
 end
 
 # Global FIPS override flag.
