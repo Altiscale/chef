@@ -21,7 +21,7 @@ homepage "https://www.chef.io"
 license "Apache-2.0"
 license_file "../LICENSE"
 
-build_iteration 1
+build_iteration ENV['BUILD_NUMBER'] || 1
 # Do not use __FILE__ after this point, use current_file. If you use __FILE__
 # after this point, any dependent defs (ex: angrychef) that use instance_eval
 # will fail to work correctly.
