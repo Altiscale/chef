@@ -1,4 +1,5 @@
-name "rbeapi-gem"
+name "chef-rbeapi"
+
 default_version "1.2"
 
 build do
