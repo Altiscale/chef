@@ -55,6 +55,7 @@ dependency "preparation"
 # All actual dependencies are in chef-complete, so that the addition
 # or removal of a dependency doesn't dirty the entire project file
 dependency "chef-complete"
+dependency "rbeapi-gem"
 
 package :rpm do
   signing_passphrase ENV["OMNIBUS_RPM_SIGNING_PASSPHRASE"]
