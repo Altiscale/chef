@@ -1,4 +1,6 @@
-name "chef-rbeapi"
+name "chef-gem-rbeapi"
+
+skip_transitive_dependency_licensing true
 
 default_version "1.2"
 
