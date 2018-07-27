@@ -1,5 +1,5 @@
 GIT
-  remote: https://github.com/Altiscale/omnibus-software
+  remote: https://github.com/Altiscale/omnibus-software.git
   revision: c2c22b4adb48734c044a10270c7ae00160d83aa0
   branch: master-altiscale
   specs:
@@ -30,6 +30,7 @@ GEM
   specs:
     addressable (2.5.2)
       public_suffix (>= 2.0.2, < 4.0)
+    artifactory (2.8.2)
     awesome_print (1.8.0)
     aws-sdk (2.11.96)
       aws-sdk-resources (= 2.11.96)
@@ -248,6 +249,7 @@ PLATFORMS
   ruby
 
 DEPENDENCIES
+  artifactory
   berkshelf (~> 4.0)
   kitchen-vagrant (~> 0.19.0)
   ohai (< 14)
