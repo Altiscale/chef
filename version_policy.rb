@@ -22,18 +22,18 @@ OMNIBUS_OVERRIDES = {
   # https://github.com/chef/omnibus-software/blob/aefb7e79d29ca746c3f843673ef5e317fa3cba54/config/software/libtool.rb#L23
   :bundler => "1.12.5", # until we figure out how to work with 1.13.0
   "libffi" => "3.2.1",
-  "libiconv" => "1.14",
-  "liblzma" => "5.2.2",
+  "libiconv" => "1.15",
+  "liblzma" => "5.2.3",
   ## according to comment in omnibus-sw, the very latest versions don't work on solaris
   # https://github.com/chef/omnibus-software/blob/aefb7e79d29ca746c3f843673ef5e317fa3cba54/config/software/libtool.rb#L23
   "libtool" => "2.4.2",
-  "libxml2" => "2.9.4",
-  "libxslt" => "1.1.29",
-  "libyaml" => "0.1.6",
+  "libxml2" => "2.9.7",
+  "libxslt" => "1.1.30",
+  "libyaml" => "0.1.7",
   "makedepend" => "1.0.5",
   "ncurses" => "5.9",
   "pkg-config-lite" => "0.28-1",
-  "ruby" => "2.3.1",
+  "ruby" => "2.3.6",
   # Leave dev-kit pinned to 4.5 on 32-bit, because 4.7 is 20MB larger and we don't want
   # to unnecessarily make the client any fatter. (Since it's different between
   # 32 and 64, we have to do it in the project file still.)
@@ -41,11 +41,11 @@ OMNIBUS_OVERRIDES = {
   "ruby-windows-devkit-bash" => "3.1.23-4-msys-1.0.18",
   "util-macros" => "1.19.0",
   "xproto" => "7.0.28",
-  "zlib" => "1.2.8",
+  "zlib" => "1.2.11",
 
   ## These can float as they are frequently updated in a way that works for us
   #override "cacerts" =>"???",
-  "openssl" => "1.0.2j",
+  "openssl" => "1.0.2n",
 }
 
 #
@@ -81,6 +81,11 @@ ACCEPTABLE_OUTDATED_GEMS = [
   "slop",       # expected to disappear with pry 0.11
   "typhoeus",   # Until the travis gem updates to 1.0.
   "cucumber-core", # Until cucumber 2.0
+  "addressable",   # gh (via travis) wants this ~> 2.4.0
+  "rake", # poise limits this to < 12
+  "github_changelog_generator", # we manage this independent of the rubygem
+  "cheffish", # 5.0.0 breaks chef-provisioning
+  "net-ssh-gateway", # chef-provisiong and test-kitchen have ~> 1.2 constraint
 ]
 
 #

@@ -30,7 +30,7 @@ class Chef
       extend Forwardable
       provides :launchd, os: "darwin"
 
-      def_delegators :@new_resource, *[
+      def_delegators :new_resource, *[
         :backup,
         :cookbook,
         :group,
@@ -150,7 +150,7 @@ class Chef
       end
 
       def content
-        plist_hash = new_resource.hash || gen_hash
+        plist_hash = new_resource.plist_hash || gen_hash
         Plist::Emit.dump(plist_hash) unless plist_hash.nil?
       end
 

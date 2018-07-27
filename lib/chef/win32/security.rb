@@ -113,10 +113,7 @@ class Chef
 
         with_lsa_policy(name) do |policy_handle, sid|
           result = LsaAddAccountRights(policy_handle.read_pointer, sid, privilege_pointer, 1)
-          win32_error = LsaNtStatusToWinError(result)
-          if win32_error != 0
-            Chef::ReservedNames::Win32::Error.raise!(nil, win32_error)
-          end
+          test_and_raise_lsa_nt_status(result)
         end
       end
 
@@ -190,15 +187,14 @@ class Chef
           result = LsaEnumerateAccountRights(policy_handle.read_pointer, sid, privilege_pointer, privilege_length)
           win32_error = LsaNtStatusToWinError(result)
           return [] if win32_error == 2 # FILE_NOT_FOUND - No rights assigned
-          if win32_error != 0
-            Chef::ReservedNames::Win32::Error.raise!(nil, win32_error)
-          end
+          test_and_raise_lsa_nt_status(result)
 
           privilege_length.read_ulong.times do |i|
             privilege = LSA_UNICODE_STRING.new(privilege_pointer.read_pointer + i * LSA_UNICODE_STRING.size)
             privileges << privilege[:Buffer].read_wstring
           end
-          LsaFreeMemory(privilege_pointer)
+          result = LsaFreeMemory(privilege_pointer.read_pointer)
+          test_and_raise_lsa_nt_status(result)
         end
 
         privileges
@@ -239,7 +235,7 @@ class Chef
         security_descriptor = FFI::MemoryPointer.new :pointer
         hr = GetNamedSecurityInfoW(path.to_wstring, type, info, nil, nil, nil, nil, security_descriptor)
         if hr != ERROR_SUCCESS
-          Chef::ReservedNames::Win32::Error.raise!("get_named_security_info(#{path}, #{type}, #{info})")
+          Chef::ReservedNames::Win32::Error.raise!("get_named_security_info(#{path}, #{type}, #{info})", hr)
         end
 
         result_pointer = security_descriptor.read_pointer
@@ -538,7 +534,7 @@ class Chef
 
         hr = SetNamedSecurityInfoW(path.to_wstring, type, security_information, owner, group, dacl, sacl)
         if hr != ERROR_SUCCESS
-          Chef::ReservedNames::Win32::Error.raise!
+          Chef::ReservedNames::Win32::Error.raise! nil, hr
         end
       end
 
@@ -551,7 +547,7 @@ class Chef
       def set_security_descriptor_dacl(security_descriptor, acl, defaulted = false, present = nil)
         security_descriptor = security_descriptor.pointer if security_descriptor.respond_to?(:pointer)
         acl = acl.pointer if acl.respond_to?(:pointer)
-        present = !security_descriptor.null? if present == nil
+        present = !security_descriptor.null? if present.nil?
 
         unless SetSecurityDescriptorDacl(security_descriptor, present, acl, defaulted)
           Chef::ReservedNames::Win32::Error.raise!
@@ -579,7 +575,7 @@ class Chef
       def self.set_security_descriptor_sacl(security_descriptor, acl, defaulted = false, present = nil)
         security_descriptor = security_descriptor.pointer if security_descriptor.respond_to?(:pointer)
         acl = acl.pointer if acl.respond_to?(:pointer)
-        present = !security_descriptor.null? if present == nil
+        present = !security_descriptor.null? if present.nil?
 
         unless SetSecurityDescriptorSacl(security_descriptor, present, acl, defaulted)
           Chef::ReservedNames::Win32::Error.raise!
@@ -595,18 +591,13 @@ class Chef
 
         policy_handle = FFI::MemoryPointer.new(:pointer)
         result = LsaOpenPolicy(nil, LSA_OBJECT_ATTRIBUTES.new, access, policy_handle)
-        win32_error = LsaNtStatusToWinError(result)
-        if win32_error != 0
-          Chef::ReservedNames::Win32::Error.raise!(nil, win32_error)
-        end
+        test_and_raise_lsa_nt_status(result)
 
         begin
           yield policy_handle, sid.pointer
         ensure
-          win32_error = LsaNtStatusToWinError(LsaClose(policy_handle.read_pointer))
-          if win32_error != 0
-            Chef::ReservedNames::Win32::Error.raise!(nil, win32_error)
-          end
+          result = LsaClose(policy_handle.read_pointer)
+          test_and_raise_lsa_nt_status(result)
         end
       end
 
@@ -653,6 +644,13 @@ class Chef
           Chef::ReservedNames::Win32::Error.raise!
         end
         Token.new(Handle.new(token.read_pointer))
+      end
+
+      def self.test_and_raise_lsa_nt_status(result)
+        win32_error = LsaNtStatusToWinError(result)
+        if win32_error != 0
+          Chef::ReservedNames::Win32::Error.raise!(nil, win32_error)
+        end
       end
     end
   end

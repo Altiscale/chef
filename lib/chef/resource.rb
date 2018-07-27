@@ -579,7 +579,7 @@ class Chef
     def load_from(resource)
       resource.instance_variables.each do |iv|
         unless iv == :@source_line || iv == :@action || iv == :@not_if || iv == :@only_if
-          self.instance_variable_set(iv, resource.instance_variable_get(iv))
+          instance_variable_set(iv, resource.instance_variable_get(iv))
         end
       end
     end
@@ -667,19 +667,32 @@ class Chef
 
     def to_text
       return "suppressed sensitive resource output" if sensitive
-      ivars = instance_variables.map { |ivar| ivar.to_sym } - HIDDEN_IVARS
       text = "# Declared in #{@source_line}\n\n"
       text << "#{resource_name}(\"#{name}\") do\n"
+
+      all_props = {}
+      self.class.state_properties.map do |p|
+        all_props[p.name.to_s] = p.sensitive? ? '"*sensitive value suppressed*"' : value_to_text(p.get(self))
+      end
+
+      ivars = instance_variables.map { |ivar| ivar.to_sym } - HIDDEN_IVARS
       ivars.each do |ivar|
-        if (value = instance_variable_get(ivar)) && !(value.respond_to?(:empty?) && value.empty?)
-          value_string = value.respond_to?(:to_text) ? value.to_text : value.inspect
-          text << "  #{ivar.to_s.sub(/^@/, '')} #{value_string}\n"
+        iv = ivar.to_s.sub(/^@/, "")
+        if all_props.keys.include?(iv)
+          text << "  #{iv} #{all_props[iv]}\n"
+        elsif (value = instance_variable_get(ivar)) && !(value.respond_to?(:empty?) && value.empty?)
+          text << "  #{iv} #{value_to_text(value)}\n"
         end
       end
+
       [@not_if, @only_if].flatten.each do |conditional|
         text << "  #{conditional.to_text}\n"
       end
       text << "end\n"
+    end
+
+    def value_to_text(value)
+      value.respond_to?(:to_text) ? value.to_text : value.inspect
     end
 
     def inspect
@@ -726,7 +739,7 @@ class Chef
     end
 
     def self.json_create(o)
-      resource = self.new(o["instance_vars"]["@name"])
+      resource = new(o["instance_vars"]["@name"])
       o["instance_vars"].each do |k, v|
         resource.instance_variable_set("@#{k}".to_sym, v)
       end
@@ -1036,7 +1049,7 @@ class Chef
     # A::B::BlahDBlah -> blah_d_blah
     #
     def self.use_automatic_resource_name
-      automatic_name = convert_to_snake_case(self.name.split("::")[-1])
+      automatic_name = convert_to_snake_case(name.split("::")[-1])
       resource_name automatic_name
     end
 
@@ -1486,7 +1499,7 @@ class Chef
       if args.size == 1
         args.first
       else
-        return *args
+        args
       end
     end
 
@@ -1548,6 +1561,13 @@ class Chef
     #
     # Returns the class with the given resource_name.
     #
+    # NOTE: Chef::Resource.resource_matching_short_name(:package) returns
+    # Chef::Resource::Package, while on rhel the API call
+    # Chef::Resource.resource_for_node(:package, node) will return
+    # Chef::Resource::YumPackage -- which is probably what you really
+    # want.  This API should most likely be removed or changed to call
+    # resource_for_node.
+    #
     # ==== Parameters
     # short_name<Symbol>:: short_name of the resource (ie :directory)
     #
@@ -1560,14 +1580,12 @@ class Chef
 
     # @api private
     def lookup_provider_constant(name, action = :nothing)
-      begin
-        self.class.provider_base.const_get(convert_to_class_name(name.to_s))
-      rescue NameError => e
-        if e.to_s =~ /#{Regexp.escape(self.class.provider_base.to_s)}/
-          raise ArgumentError, "No provider found to match '#{name}'"
-        else
-          raise e
-        end
+      self.class.provider_base.const_get(convert_to_class_name(name.to_s))
+    rescue NameError => e
+      if e.to_s =~ /#{Regexp.escape(self.class.provider_base.to_s)}/
+        raise ArgumentError, "No provider found to match '#{name}'"
+      else
+        raise e
       end
     end
 

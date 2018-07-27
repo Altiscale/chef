@@ -1,10 +1,12 @@
 source "https://rubygems.org"
 
-gem "omnibus", git: "https://github.com/chef/omnibus.git"
-gem 'omnibus-software', github: 'Altiscale/omnibus-software', branch: 'master-altiscale'
-gem "license_scout", github: "chef/license_scout"
+gem "omnibus", git: "https://github.com/chef/omnibus.git", tag: 'v5.6.10'
+gem 'omnibus-software', git: 'https://github.com/Altiscale/omnibus-software.git', branch: 'master-altiscale'
+gem 'artifactory'
+gem 'ohai', '< 14'
 
 gem "pedump"
+gem 'thor', '< 0.19.2'
 
 # This development group is installed by default when you run `bundle install`,
 # but if you are using Omnibus in a CI-based infrastructure, you do not need

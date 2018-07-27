@@ -119,7 +119,7 @@ describe Chef::Provider::User::Useradd, metadata do
         break if status.exitstatus != 8
 
         sleep 1
-        max_retries = max_retries - 1
+        max_retries -= 1
       rescue UserNotFound
         break
       end
@@ -639,11 +639,20 @@ describe Chef::Provider::User::Useradd, metadata do
         # TODO: platform_family should be setup in spec_helper w/ tags
         if %w{opensuse}.include?(OHAI_SYSTEM["platform_family"]) ||
             (%w{suse}.include?(OHAI_SYSTEM["platform_family"]) &&
-            OHAI_SYSTEM["platform_version"].to_f < 12.1)
+            OHAI_SYSTEM["platform_version"].to_f < 12.0)
           # suse 11.x gets this right:
           it "errors out trying to unlock the user" do
             expect(@error).to be_a(Mixlib::ShellOut::ShellCommandFailed)
             expect(@error.message).to include("Cannot unlock the password")
+          end
+        elsif %w{rhel}.include?(OHAI_SYSTEM["platform_family"]) &&
+            (Chef::VersionConstraint.new("~> 6.8").include?(OHAI_SYSTEM["platform_version"].to_f) || Chef::VersionConstraint.new("~> 7.3").include?(OHAI_SYSTEM["platform_version"].to_f))
+          # RHEL 6.8 and 7.3 ship with a fixed `usermod` command
+          # Reference: https://access.redhat.com/errata/RHBA-2016:0864
+          # Reference: https://access.redhat.com/errata/RHBA-2016:2322
+          it "errors out trying to unlock the user" do
+            expect(@error).to be_a(Mixlib::ShellOut::ShellCommandFailed)
+            expect(@error.message).to include("You should set a password")
           end
         else
 

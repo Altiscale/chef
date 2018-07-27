@@ -156,6 +156,56 @@ class Chef
       end
     end
 
+    class PropertyNameCollision < Base
+      def id
+        11
+      end
+
+      def target
+        "property_name_collision.html"
+      end
+    end
+
+    class LaunchdHashProperty < Base
+      def id
+        12
+      end
+
+      def target
+        "launchd_hash_property.html"
+      end
+    end
+
+    class ChefPlatformMethods < Base
+      def id
+        13
+      end
+
+      def target
+        "chef_platform_methods.html"
+      end
+    end
+
+    class RunCommand < Base
+      def id
+        14
+      end
+
+      def target
+        "run_command.html"
+      end
+    end
+
+    class PackageMisc < Base
+      def id
+        15
+      end
+
+      def target
+        "package_misc.html"
+      end
+    end
+
     class ResourceCloning < Base
       def id
         3694
@@ -173,6 +223,16 @@ class Chef
 
       def target
         "internal_api.html"
+      end
+    end
+
+    class DnfPackageAllowDowngrade < Base
+      def id
+        10
+      end
+
+      def target
+        "dnf_package_allow_downgrade.html"
       end
     end
 

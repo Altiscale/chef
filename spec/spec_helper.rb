@@ -1,6 +1,6 @@
 #
 # Author:: Adam Jacob (<adam@chef.io>)
-# Copyright:: Copyright 2008-2016, Chef Software, Inc.
+# Copyright:: Copyright 2008-2018, Chef Software Inc.
 # License:: Apache License, Version 2.0
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -67,6 +67,8 @@ require "chef/util/file_edit"
 require "chef/config"
 
 require "chef/chef_fs/file_system_cache"
+
+require "chef/api_client_v1"
 
 if ENV["CHEF_FIPS"] == "1"
   Chef::Config.init_openssl
@@ -144,12 +146,18 @@ RSpec.configure do |config|
   config.filter_run_excluding :windows64_only => true unless windows64?
   config.filter_run_excluding :windows32_only => true unless windows32?
   config.filter_run_excluding :windows_nano_only => true unless windows_nano_server?
+  config.filter_run_excluding :windows_gte_10 => true unless windows_gte_10?
+  config.filter_run_excluding :windows_lt_10 => true if windows_gte_10?
   config.filter_run_excluding :ruby64_only => true unless ruby_64bit?
   config.filter_run_excluding :ruby32_only => true unless ruby_32bit?
   config.filter_run_excluding :windows_powershell_dsc_only => true unless windows_powershell_dsc?
   config.filter_run_excluding :windows_powershell_no_dsc_only => true unless ! windows_powershell_dsc?
   config.filter_run_excluding :windows_domain_joined_only => true unless windows_domain_joined?
   config.filter_run_excluding :windows_not_domain_joined_only => true if windows_domain_joined?
+  # We think this line was causing rspec tests to not run on the Jenkins windows
+  # testers. If we ever fix it we should restore it.
+  # config.filter_run_excluding :windows_service_requires_assign_token => true if !STDOUT.isatty && !windows_user_right?("SeAssignPrimaryTokenPrivilege")
+  config.filter_run_excluding :windows_service_requires_assign_token => true
   config.filter_run_excluding :solaris_only => true unless solaris?
   config.filter_run_excluding :system_windows_service_gem_only => true unless system_windows_service_gem?
   config.filter_run_excluding :unix_only => true unless unix?
@@ -215,10 +223,30 @@ RSpec.configure do |config|
     ENV["CHEF_TREAT_DEPRECATION_WARNINGS_AS_ERRORS"] = "1"
   end
 
+  # This bit of jankiness guards against specs which accidentally drop privs when running as
+  # root -- which are nearly impossible to debug and so we bail out very hard if this
+  # condition ever happens.  If a spec stubs Process.[e]uid this can throw a false positive
+  # which the spec must work around by unmocking Process.[e]uid to and_call_original in its
+  # after block.
+  if Process.euid == 0 && Process.uid == 0
+    config.after(:each) do
+      if Process.uid != 0
+        RSpec.configure { |c| c.fail_fast = true }
+        raise "rspec was invoked as root, but the last test dropped real uid to #{Process.uid}"
+      end
+      if Process.euid != 0
+        RSpec.configure { |c| c.fail_fast = true }
+        raise "rspec was invoked as root, but the last test dropped effective uid to #{Process.euid}"
+      end
+    end
+  end
+
   # raise if anyone commits any test to CI with :focus set on it
-  config.before(:example, :focus) do
-    raise "This example was committed with `:focus` and should not have been"
-  end if ENV["CI"]
+  if ENV["CI"]
+    config.before(:example, :focus) do
+      raise "This example was committed with `:focus` and should not have been"
+    end
+  end
 
   config.before(:suite) do
     ARGV.clear

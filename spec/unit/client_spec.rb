@@ -44,6 +44,17 @@ describe Chef::Client do
     end
   end
 
+  context "when Ohai tells us to fail" do
+    it "fails" do
+      ohai_system = Ohai::System.new
+      module Ohai::Exceptions
+        class CriticalPluginFailure < Error; end
+      end
+      expect(ohai_system).to receive(:all_plugins) { raise Ohai::Exceptions::CriticalPluginFailure }
+      expect { client.run_ohai }.to raise_error(SystemExit)
+    end
+  end
+
   describe "authentication protocol selection" do
     context "when FIPS is disabled" do
       before do
@@ -399,6 +410,55 @@ describe Chef::Client do
       expect(client.build_node).to eq(node)
 
       expect(node.chef_environment).to eq("A")
+    end
+  end
+
+  describe "load_required_recipe" do
+    let(:rest)        { double("Chef::ServerAPI (required recipe)") }
+    let(:run_context) { double("Chef::RunContext") }
+    let(:recipe)      { double("Chef::Recipe (required recipe)") }
+    let(:required_recipe) do
+      <<EOM
+fake_recipe_variable = "for reals"
+EOM
+    end
+
+    context "when required_recipe is configured" do
+
+      before(:each) do
+        expect(rest).to receive(:get).with("required_recipe").and_return(required_recipe)
+        expect(Chef::Recipe).to receive(:new).with(nil, nil, run_context).and_return(recipe)
+        expect(recipe).to receive(:from_file)
+      end
+
+      it "fetches the recipe and adds it to the run context" do
+        client.load_required_recipe(rest, run_context)
+      end
+
+      context "when the required_recipe has bad contents" do
+        let(:required_recipe) do
+          <<EOM
+this is not a recipe
+EOM
+        end
+        it "should not raise an error" do
+          expect { client.load_required_recipe(rest, run_context) }.not_to raise_error()
+        end
+      end
+    end
+
+    context "when required_recipe returns 404" do
+      let(:http_response) { Net::HTTPNotFound.new("1.1", "404", "Not Found") }
+      let(:http_exception) { Net::HTTPServerException.new('404 "Not Found"', http_response) }
+
+      before(:each) do
+        expect(rest).to receive(:get).with("required_recipe").and_raise(http_exception)
+      end
+
+      it "should log and continue on" do
+        expect(Chef::Log).to receive(:debug)
+        client.load_required_recipe(rest, run_context)
+      end
     end
   end
 
