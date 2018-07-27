@@ -39,6 +39,26 @@ else
   install_dir "#{default_root}/#{name}"
 end
 
+# Global FIPS override flag.
+if windows? || rhel?
+  override :fips, enabled: true
+end
+
+dependency "preparation"
+dependency "rb-readline" if windows?
+dependency "nokogiri"
+dependency "pry"
+dependency "chef"
+dependency "shebang-cleanup"
+dependency "version-manifest"
+dependency "openssl-customization"
+dependency "verticloudkeydb"
+dependency "alti_kerbutils"
+dependency "mysql_client"
+dependency "mysql_gem"
+dependency "alti-sentinel"
+
+
 # Load dynamically updated overrides
 overrides_path = File.expand_path("../../../../omnibus_overrides.rb", current_file)
 instance_eval(IO.read(overrides_path), overrides_path)

@@ -1,6 +1,7 @@
 GIT
   remote: https://github.com/Altiscale/omnibus-software.git
   revision: c2c22b4adb48734c044a10270c7ae00160d83aa0
+
   branch: master-altiscale
   specs:
     omnibus-software (4.0.0)
@@ -8,9 +9,11 @@ GIT
       omnibus (>= 5.5.0)
 
 GIT
+
   remote: https://github.com/chef/omnibus.git
   revision: 54a3ce8d600cc1df1e6375c649f65d7355b10c65
   tag: v5.6.10
+
   specs:
     omnibus (5.6.10)
       aws-sdk (~> 2)
@@ -28,6 +31,7 @@ GIT
 GEM
   remote: https://rubygems.org/
   specs:
+
     addressable (2.5.2)
       public_suffix (>= 2.0.2, < 4.0)
     artifactory (2.8.2)
@@ -40,6 +44,7 @@ GEM
     aws-sdk-resources (2.11.96)
       aws-sdk-core (= 2.11.96)
     aws-sigv4 (1.0.3)
+
     berkshelf (4.3.5)
       addressable (~> 2.3, >= 2.3.4)
       berkshelf-api-client (~> 2.0, >= 2.0.2)
