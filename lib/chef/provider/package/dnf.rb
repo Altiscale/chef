@@ -58,7 +58,13 @@ class Chef
         # any cached state of installed/available versions and should be kept that way.
         #
         def python_helper
-          @python_helper ||= PythonHelper.instance
+          if @python_helper.nil?
+            @python_helper = PythonHelper.instance
+            (options || []).each do |option|
+              @python_helper.enablerepo(option.split("=", 2)[1].strip) if option =~ /enablerepo/
+            end
+          end
+          @python_helper
         end
 
         def load_current_resource

@@ -67,6 +67,16 @@ class Chef
             start if stdin.nil?
           end
 
+          def enablerepo(repo)
+            with_helper do
+              json = "{\"action\":\"enablerepo\",\"repo\":\"#{repo}\"}"
+              Chef::Log.trace "sending '#{json}' to python helper"
+              stdin.syswrite json + "\n"
+              output = stdout.sysread(4096).chomp
+              Chef::Log.trace "got '#{output}' from python helper"
+            end
+          end
+
           def compare_versions(version1, version2)
             with_helper do
               json = build_version_query("versioncompare", [version1, version2])

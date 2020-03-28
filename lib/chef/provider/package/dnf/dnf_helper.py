@@ -32,6 +32,14 @@ def get_sack():
         base.fill_sack(load_system_repo='auto')
     return base.sack
 
+def enablerepo(repo):
+    sack = get_sack()
+    repos = base.repos.get_matching(repo)
+    for repo_obj in repos:
+        repo_obj.enable()
+    base.fill_sack(load_system_repo='auto')
+    sys.stdout.write('{} enabled\n'.format(repo))
+
 # FIXME: leaks memory and does not work
 def flushcache():
     try:
@@ -110,5 +118,7 @@ while 1:
         flushcache()
     elif command['action'] == "versioncompare":
         versioncompare(command['versions'])
+    elif command['action'] == "enablerepo":
+        enablerepo(command['repo'])
     else:
         raise RuntimeError("bad command")
